@@ -33,7 +33,7 @@ class UserManager(BaseUserManager):
 
 class Role(models.Model):
     name = models.CharField(max_length=50, unique=True)
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(**NULL)
     permissions = models.ManyToManyField(Permission, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -81,9 +81,9 @@ class UserSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
     session_key = models.CharField(max_length=100)
     ip_address = models.GenericIPAddressField()
-    user_agent = models.TextField(blank=True, null=True)
+    user_agent = models.TextField(**NULL)
     login_time = models.DateTimeField(auto_now_add=True)
-    logout_time = models.DateTimeField(blank=True, null=True)
+    logout_time = models.DateTimeField(**NULL)
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -95,14 +95,14 @@ class UserSession(models.Model):
 
 
 class ActivityLog(models.Model):
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, **NULL)
     action = models.CharField(max_length=20, choices=ActionChoices.choices)
-    model_name = models.CharField(max_length=50, blank=True, null=True)
-    object_id = models.PositiveIntegerField(blank=True, null=True)
-    object_repr = models.CharField(max_length=200, blank=True, null=True)
-    changes = models.JSONField(blank=True, null=True)
-    ip_address = models.GenericIPAddressField(blank=True, null=True)
-    user_agent = models.TextField(blank=True, null=True)
+    model_name = models.CharField(max_length=50, **NULL)
+    object_id = models.PositiveIntegerField(**NULL)
+    object_repr = models.CharField(max_length=200, **NULL)
+    changes = models.JSONField(**NULL)
+    ip_address = models.GenericIPAddressField(**NULL)
+    user_agent = models.TextField(**NULL)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
