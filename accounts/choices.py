@@ -2,9 +2,9 @@ from django.db import models
 
 
 class AccountStatusChoices(models.TextChoices):
-    ACTIVE = "MALE", "Male"
-    INACTIVE = "FEMALE", "Female"
-    SUSPENDED = "ANY", "Any"
+    ACTIVE = "ACTIVE", "Active"
+    INACTIVE = "INACTIVE", "Inactive"
+    SUSPENDED = "SUSPENDED", "Suspended"
 
 
 class ActionChoices(models.TextChoices):

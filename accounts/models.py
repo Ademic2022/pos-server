@@ -1,6 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User, Permission
-from django.db import models
+from django.contrib.auth.models import Permission
 from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
@@ -46,35 +45,41 @@ class Role(models.Model):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    # Required fields for authentication
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(**NULL)
+    first_name = models.CharField(max_length=30, **NULL)
+    last_name = models.CharField(max_length=30, **NULL)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+
+    # Custom fields
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, **NULL)
     phone = models.CharField(max_length=20, **NULL)
     address = models.TextField(**NULL)
     employee_id = models.CharField(max_length=20, unique=True, **NULL)
     salary = models.DecimalField(max_digits=10, decimal_places=2, **NULL)
-    status = models.CharField(
-        max_length=10,
-        choices=AccountStatusChoices.choices,
-        default=AccountStatusChoices.ACTIVE,
-    )
     last_login_ip = models.GenericIPAddressField(**NULL)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     meta = models.JSONField(default=dict, **NULL)
 
+    objects = UserManager()
+
+    USERNAME_FIELD = "username"
+    REQUIRED_FIELDS = ["email"]
+
     def __str__(self):
-        return f"{self.user.get_full_name()} ({self.user.username})"
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name} ({self.username})"
+        return self.username
 
-    def has_permission(self, permission_codename):
-        """Check if user has specific permission through role or direct assignment"""
-        # Check direct user permissions
-        if self.user.has_perm(permission_codename):
-            return True
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
 
-        # Check role permissions
-        if self.role:
-            return self.role.permissions.filter(codename=permission_codename).exists()
-
-        return False
+    def get_short_name(self):
+        return self.first_name
 
 
 class UserSession(models.Model):
