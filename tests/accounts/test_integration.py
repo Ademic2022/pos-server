@@ -13,20 +13,34 @@ class TestAccountsIntegration:
         """Test complete flow from registration to login"""
         # Step 1: Register a new user
         register_mutation = """
-            mutation RegisterUser($input: RegisterInput!) {
-                register(input: $input) {
+            mutation RegisterUser(
+                $username: String!,
+                $email: String!,
+                $firstName: String!,
+                $lastName: String!,
+                $password1: String!,
+                $password2: String!
+            ) {
+                register(
+                    username: $username,
+                    email: $email,
+                    firstName: $firstName,
+                    lastName: $lastName,
+                    password1: $password1,
+                    password2: $password2
+                ) {
                     success
                     errors
                 }
             }
         """
         register_variables = {
-            "input": {
-                "username": "flowuser",
-                "email": "flowuser@example.com",
-                "password1": "testpass123!",
-                "password2": "testpass123!",
-            }
+            "username": "flowuser",
+            "email": "flowuser@example.com",
+            "firstName": "Flow",
+            "lastName": "User",
+            "password1": "testpass123!",
+            "password2": "testpass123!",
         }
 
         register_result = graphql_client.execute(

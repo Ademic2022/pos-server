@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     "graphql_auth",
     "corsheaders",
     "accounts",
-    # "customers",
+    "customers",
     # "products",
     # "sales",
 ]

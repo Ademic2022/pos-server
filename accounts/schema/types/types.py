@@ -21,7 +21,6 @@ class UserNode(DjangoObjectType):
             "employee_id",
             "is_staff",
             "is_superuser",
-            "is_verified",
         )
         interfaces = (graphene.relay.Node,)
         filter_fields = {

@@ -88,3 +88,23 @@ class ActivityLogFactory(DjangoModelFactory):
     object_repr = factory.Faker("sentence", nb_words=3)
     ip_address = factory.Faker("ipv4")
     user_agent = factory.Faker("user_agent")
+
+
+class CustomerFactory(DjangoModelFactory):
+    class Meta:
+        model = "customers.Customer"
+
+    name = factory.Faker("name")
+    email = factory.Faker("email")
+    phone = factory.Faker("phone_number")
+    address = factory.Faker("address")
+    type = factory.Faker("random_element", elements=("retail", "wholesale"))
+    status = factory.Faker("random_element", elements=("active", "inactive", "blocked"))
+    balance = factory.Faker("pydecimal", left_digits=5, right_digits=2, positive=True)
+    credit_limit = factory.Faker(
+        "pydecimal", left_digits=5, right_digits=2, positive=True
+    )
+    total_purchases = factory.Faker(
+        "pydecimal", left_digits=6, right_digits=2, positive=True
+    )
+    notes = factory.Faker("text", max_nb_chars=200)
