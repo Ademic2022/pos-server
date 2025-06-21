@@ -2,7 +2,7 @@ import graphene
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from accounts.models import ActivityLog
-from accounts.schema.types.types import ActivityLogType
+# from accounts.schema.types.types import ActivityLogType
 
 
 class Logout(graphene.Mutation):

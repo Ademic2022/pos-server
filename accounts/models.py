@@ -5,7 +5,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
     AbstractBaseUser,
 )
-from accounts.choices import AccountStatusChoices, ActionChoices
+from accounts.choices import ActionChoices
 
 
 NULL = {"null": True, "blank": True}
@@ -69,6 +69,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email"]
+    EMAIL_FIELD = "email"
 
     def __str__(self):
         if self.first_name and self.last_name:
