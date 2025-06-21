@@ -161,7 +161,14 @@ GRAPHQL_AUTH = {
     "ALLOW_LOGIN_NOT_VERIFIED": config(
         "ALLOW_LOGIN_NOT_VERIFIED", default=True, cast=bool
     ),
-}
+    "UPDATE_MUTATION_FIELDS": {
+        "username": "String",
+        "first_name": "String",
+        "last_name": "String",
+        "phone": "String",
+        "address": "String",
+    },
+}  # https://django-graphql-auth.readthedocs.io/en/latest/settings/
 
 # GraphQL JWT settings
 GRAPHQL_JWT = {
