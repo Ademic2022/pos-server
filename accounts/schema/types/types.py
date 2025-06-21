@@ -3,7 +3,7 @@ from graphene_django import DjangoObjectType
 from accounts.models import ActivityLog, Role, User
 
 
-class UserType(DjangoObjectType):
+class UserNode(DjangoObjectType):
     class Meta:
         model = User
         fields = (
