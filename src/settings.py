@@ -10,7 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,7 +39,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "graphene_django",
+    "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
+    "graphql_auth",
+    "corsheaders",
     "accounts",
+    # "customers",
+    # "products",
+    # "sales",
 ]
 
 MIDDLEWARE = [
@@ -48,6 +57,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+AUTHENTICATION_BACKENDS = [
+    "graphql_jwt.backends.JSONWebTokenBackend",
+    "graphql_auth.backends.GraphQLAuthBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 ROOT_URLCONF = "src.urls"
@@ -99,7 +114,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
+GRAPHENE = {
+    "SCHEMA": "src.schemas.schema",
+    "MIDDLEWARE": [
+        "graphql_jwt.middleware.JSONWebTokenMiddleware",
+    ],
+}
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -116,8 +136,33 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Custom user model
+AUTH_USER_MODEL = "accounts.User"
+
+# GraphQL Auth settings
+GRAPHQL_AUTH = {
+    "SEND_ACTIVATION_EMAIL": False,
+    "REGISTER_MUTATION_FIELDS": {
+        "email": "String",
+        "username": "String",
+        "first_name": "String",
+        "last_name": "String",
+    },
+    "ALLOW_LOGIN_NOT_VERIFIED": config(
+        "ALLOW_LOGIN_NOT_VERIFIED", default=True, cast=bool
+    ),
+}
+
+# GraphQL JWT settings
+GRAPHQL_JWT = {
+    "JWT_VERIFY_EXPIRATION": True,
+    "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+    "JWT_AUTH_HEADER_PREFIX": "Bearer",
+}
