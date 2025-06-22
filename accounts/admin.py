@@ -125,13 +125,12 @@ class UserStatusAdmin(admin.ModelAdmin):
         """Display verification status with colored badge"""
         if obj.verified:
             return format_html(
-                '<span style="color: green; font-weight: bold;">{}</span>', 
-                "✓ Verified"
+                '<span style="color: green; font-weight: bold;">{}</span>', "✓ Verified"
             )
         else:
             return format_html(
-                '<span style="color: red; font-weight: bold;">{}</span>', 
-                "✗ Not Verified"
+                '<span style="color: red; font-weight: bold;">{}</span>',
+                "✗ Not Verified",
             )
 
     verified_badge.short_description = "Verification Status"
@@ -140,13 +139,11 @@ class UserStatusAdmin(admin.ModelAdmin):
         """Display archived status with colored badge"""
         if obj.archived:
             return format_html(
-                '<span style="color: red; font-weight: bold;">{}</span>', 
-                "📁 Archived"
+                '<span style="color: red; font-weight: bold;">{}</span>', "📁 Archived"
             )
         else:
             return format_html(
-                '<span style="color: green; font-weight: bold;">{}</span>', 
-                "📂 Active"
+                '<span style="color: green; font-weight: bold;">{}</span>', "📂 Active"
             )
 
     archived_badge.short_description = "Archive Status"

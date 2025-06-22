@@ -24,7 +24,7 @@ class TestUserStatusAdmin:
 
         # Get the automatically created UserStatus
         user_status = UserStatus.objects.get(user=user)
-        
+
         # Test verified status
         user_status.verified = True
         user_status.save()
@@ -46,7 +46,7 @@ class TestUserStatusAdmin:
 
         # Get the automatically created UserStatus
         user_status = UserStatus.objects.get(user=user)
-        
+
         # Test archived status
         user_status.archived = True
         user_status.save()
@@ -102,18 +102,14 @@ class TestUserStatusAdmin:
 
         # Create unverified user statuses - get existing ones
         users = [UserFactory() for _ in range(3)]
-        user_statuses = [
-            UserStatus.objects.get(user=u) for u in users
-        ]
-        
+        user_statuses = [UserStatus.objects.get(user=u) for u in users]
+
         # Make sure they're unverified initially
         for user_status in user_statuses:
             user_status.verified = False
             user_status.save()
-        
-        queryset = UserStatus.objects.filter(
-            id__in=[us.id for us in user_statuses]
-        )
+
+        queryset = UserStatus.objects.filter(id__in=[us.id for us in user_statuses])
 
         # Test mark as verified action
         admin_instance.mark_as_verified(request, queryset)
@@ -147,18 +143,14 @@ class TestUserStatusAdmin:
 
         # Create active user statuses - get existing ones
         users = [UserFactory() for _ in range(3)]
-        user_statuses = [
-            UserStatus.objects.get(user=u) for u in users
-        ]
-        
+        user_statuses = [UserStatus.objects.get(user=u) for u in users]
+
         # Make sure they're not archived initially
         for user_status in user_statuses:
             user_status.archived = False
             user_status.save()
-        
-        queryset = UserStatus.objects.filter(
-            id__in=[us.id for us in user_statuses]
-        )
+
+        queryset = UserStatus.objects.filter(id__in=[us.id for us in user_statuses])
 
         # Test mark as archived action
         admin_instance.mark_as_archived(request, queryset)
@@ -218,31 +210,31 @@ class TestUserStatusAdmin:
     def test_queryset_optimization(self):
         """Test that get_queryset properly optimizes queries"""
         admin_instance = UserStatusAdmin(UserStatus, admin.site)
-        
+
         # Create a mock request
         class MockRequest:
             pass
-        
+
         request = MockRequest()
         queryset = admin_instance.get_queryset(request)
-        
+
         # Check that select_related is applied
         assert "user" in queryset.query.select_related
 
     def test_readonly_fields(self):
         """Test that readonly fields are properly configured"""
         admin_instance = UserStatusAdmin(UserStatus, admin.site)
-        
+
         expected_readonly_fields = ("user",)
         assert admin_instance.readonly_fields == expected_readonly_fields
 
     def test_actions_list(self):
         """Test that all expected actions are configured"""
         admin_instance = UserStatusAdmin(UserStatus, admin.site)
-        
+
         expected_actions = [
             "mark_as_verified",
-            "mark_as_unverified", 
+            "mark_as_unverified",
             "mark_as_archived",
             "mark_as_unarchived",
         ]
