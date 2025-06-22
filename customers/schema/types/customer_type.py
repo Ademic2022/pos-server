@@ -1,4 +1,5 @@
 import graphene
+from decimal import Decimal
 from graphene_django import DjangoObjectType
 from customers.models import Customer
 from customers.schema.enums.customer_enums import CustomerTypeEnum, CustomerStatusEnum
@@ -12,6 +13,7 @@ class CustomerType(DjangoObjectType):
     is_credit_available = graphene.Boolean()
     type = CustomerTypeEnum()
     status = CustomerStatusEnum()
+    balance = graphene.Decimal()
 
     class Meta:
         model = Customer
@@ -60,6 +62,10 @@ class CustomerType(DjangoObjectType):
         """Resolve customer status to GraphQL enum"""
         # Convert Django TextChoices to string value for GraphQL enum
         return str(self.status) if self.status else None
+
+    def resolve_balance(self, info):
+        """Resolve customer balance"""
+        return Decimal(self.balance or "0.00")
 
 
 class CustomerStatsType(graphene.ObjectType):

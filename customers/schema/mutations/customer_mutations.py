@@ -1,4 +1,5 @@
 import graphene
+from decimal import Decimal
 from django.db import transaction
 from graphql_jwt.decorators import login_required
 from customers.models import Customer
@@ -44,7 +45,7 @@ class CreateCustomerMutation(graphene.Mutation):
                     phone=input.phone,
                     address=input.address,
                     type=input.type.value,
-                    credit_limit=input.credit_limit or 0,
+                    credit_limit=Decimal(input.get("credit_limit", "0.00")),
                     notes=input.notes,
                     created_by=info.context.user,
                 )
@@ -129,7 +130,7 @@ class UpdateCustomerMutation(graphene.Mutation):
                     update_fields.append("status")
 
                 if input.credit_limit is not None:
-                    customer.credit_limit = input.credit_limit
+                    customer.credit_limit = Decimal(input.get("credit_limit", "0.00"))
                     update_fields.append("credit_limit")
 
                 if input.notes is not None:
