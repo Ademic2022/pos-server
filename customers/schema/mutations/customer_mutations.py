@@ -43,7 +43,7 @@ class CreateCustomerMutation(graphene.Mutation):
                     email=input.email,
                     phone=input.phone,
                     address=input.address,
-                    type=input.type,
+                    type=input.type.value,
                     credit_limit=input.credit_limit or 0,
                     notes=input.notes,
                     created_by=info.context.user,
@@ -121,11 +121,11 @@ class UpdateCustomerMutation(graphene.Mutation):
                     update_fields.append("address")
 
                 if input.type is not None:
-                    customer.type = input.type
+                    customer.type = input.type.value
                     update_fields.append("type")
 
                 if input.status is not None:
-                    customer.status = input.status
+                    customer.status = input.status.value
                     update_fields.append("status")
 
                 if input.credit_limit is not None:

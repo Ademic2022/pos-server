@@ -1,9 +1,6 @@
-import pytest
-import json
 from decimal import Decimal
-from django.test import Client
 from src.schemas import schema
-from tests.factories import CustomerFactory, UserFactory
+from tests.factories import CustomerFactory
 
 
 class TestCustomerQueries:
