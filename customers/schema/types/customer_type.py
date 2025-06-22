@@ -1,11 +1,7 @@
 import graphene
 from graphene_django import DjangoObjectType
 from customers.models import Customer
-from customers.choices import CustomerTypes, StatusChoices
-
-# Create GraphQL Enums from Django choices
-CustomerTypeEnum = graphene.Enum.from_enum(CustomerTypes)
-StatusChoiceEnum = graphene.Enum.from_enum(StatusChoices)
+from customers.schema.enums.customer_enums import CustomerTypeEnum, CustomerStatusEnum
 
 
 class CustomerType(DjangoObjectType):
@@ -15,7 +11,7 @@ class CustomerType(DjangoObjectType):
     available_credit = graphene.Decimal()
     is_credit_available = graphene.Boolean()
     type = CustomerTypeEnum()
-    status = StatusChoiceEnum()
+    status = CustomerStatusEnum()
 
     class Meta:
         model = Customer
@@ -38,9 +34,16 @@ class CustomerType(DjangoObjectType):
         filter_fields = {
             "name": ["exact", "icontains", "istartswith"],
             "email": ["exact", "icontains"],
+            "phone": ["exact", "icontains"],
+            "address": ["icontains"],
             "type": ["exact"],
             "status": ["exact"],
             "balance": ["exact", "gte", "lte", "gt", "lt"],
+            "credit_limit": ["exact", "gte", "lte", "gt", "lt"],
+            "total_purchases": ["exact", "gte", "lte", "gt", "lt"],
+            "last_purchase": ["exact", "gte", "lte"],
+            "created_at": ["exact", "gte", "lte"],
+            "updated_at": ["exact", "gte", "lte"],
         }
         interfaces = (graphene.relay.Node,)
 
@@ -52,6 +55,16 @@ class CustomerType(DjangoObjectType):
 
     def resolve_is_credit_available(self, info):
         return self.is_credit_available
+
+    def resolve_type(self, info):
+        """Resolve customer type to GraphQL enum"""
+        # Convert Django TextChoices to string value for GraphQL enum
+        return str(self.type) if self.type else None
+
+    def resolve_status(self, info):
+        """Resolve customer status to GraphQL enum"""
+        # Convert Django TextChoices to string value for GraphQL enum
+        return str(self.status) if self.status else None
 
 
 class CustomerStatsType(graphene.ObjectType):

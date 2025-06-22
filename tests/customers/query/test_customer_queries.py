@@ -173,7 +173,7 @@ class TestCustomerQueries:
     ):
         """Test filtering customers by type"""
         query = """
-        query($type: CustomerTypes) {
+        query($type: CustomerTypeEnum) {
             customers(type: $type) {
                 edges {
                     node {
@@ -204,7 +204,7 @@ class TestCustomerQueries:
     ):
         """Test filtering customers by status"""
         query = """
-        query($status: StatusChoices) {
+        query($status: CustomerStatusEnum) {
             customers(status: $status) {
                 edges {
                     node {
@@ -292,7 +292,7 @@ class TestCustomerQueries:
     ):
         """Test combining multiple filters"""
         query = """
-        query($type: CustomerTypes, $status: StatusChoices) {
+        query($type: CustomerTypeEnum, $status: CustomerStatusEnum) {
             customers(type: $type, status: $status) {
                 edges {
                     node {
