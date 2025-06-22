@@ -91,18 +91,20 @@ class CustomerAdmin(admin.ModelAdmin):
 
     def available_credit_display(self, obj):
         """Display available credit with color coding"""
+        from decimal import Decimal
+
         available = obj.available_credit
         if available <= 0:
             color = "red"
-        elif available < obj.credit_limit * 0.2:  # Less than 20% available
+        elif available < obj.credit_limit * Decimal("0.2"):  # Less than 20% available
             color = "orange"
         else:
             color = "green"
 
         return format_html(
-            '<span style="color: {}; font-weight: bold;">${:.2f}</span>',
+            '<span style="color: {}; font-weight: bold;">${}</span>',
             color,
-            available,
+            f"{available:.2f}",
         )
 
     available_credit_display.short_description = "Available Credit"
