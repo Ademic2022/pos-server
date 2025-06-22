@@ -39,11 +39,6 @@ class CustomerType(DjangoObjectType):
             "type": ["exact"],
             "status": ["exact"],
             "balance": ["exact", "gte", "lte", "gt", "lt"],
-            "credit_limit": ["exact", "gte", "lte", "gt", "lt"],
-            "total_purchases": ["exact", "gte", "lte", "gt", "lt"],
-            "last_purchase": ["exact", "gte", "lte"],
-            "created_at": ["exact", "gte", "lte"],
-            "updated_at": ["exact", "gte", "lte"],
         }
         interfaces = (graphene.relay.Node,)
 
