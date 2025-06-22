@@ -45,7 +45,11 @@ class CreateCustomerMutation(graphene.Mutation):
                     phone=input.phone,
                     address=input.address,
                     type=input.type.value,
-                    credit_limit=Decimal(input.get("credit_limit", "0.00")),
+                    credit_limit=(
+                        Decimal(str(input.credit_limit))
+                        if input.credit_limit
+                        else Decimal("0.00")
+                    ),
                     notes=input.notes,
                     created_by=info.context.user,
                 )
@@ -130,7 +134,7 @@ class UpdateCustomerMutation(graphene.Mutation):
                     update_fields.append("status")
 
                 if input.credit_limit is not None:
-                    customer.credit_limit = Decimal(input.get("credit_limit", "0.00"))
+                    customer.credit_limit = Decimal(str(input.credit_limit))
                     update_fields.append("credit_limit")
 
                 if input.notes is not None:

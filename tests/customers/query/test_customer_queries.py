@@ -426,3 +426,43 @@ class TestCustomerQueries:
             assert customer["type"] == "WHOLESALE"
             assert customer["status"] == "ACTIVE"
             assert float(customer["balance"]) >= 400.00
+
+    def test_customer_decimal_fields_serialization(
+        self, db, user_with_token, sample_customers, graphql_request_factory
+    ):
+        """Test querying customer with decimal fields that were causing serialization issues"""
+        customer = sample_customers[0]
+
+        query = """
+        query($id: ID!) {
+            customer(id: $id) {
+                id
+                name
+                balance
+                creditLimit
+                totalPurchases
+                availableCredit
+                isCreditAvailable
+            }
+        }
+        """
+
+        request = graphql_request_factory(user_with_token)
+        result = schema.execute(
+            query, variables={"id": str(customer.id)}, context=request
+        )
+
+        assert result.errors is None
+        customer_data = result.data["customer"]
+
+        # Verify all decimal fields are properly serialized
+        assert customer_data["balance"] is not None
+        assert customer_data["creditLimit"] is not None
+        assert customer_data["totalPurchases"] is not None
+        assert customer_data["availableCredit"] is not None
+        assert customer_data["isCreditAvailable"] is not None
+
+        # Verify the calculated fields work correctly
+        expected_available_credit = float(customer.available_credit())
+        assert float(customer_data["availableCredit"]) == expected_available_credit
+        assert customer_data["isCreditAvailable"] == customer.is_credit_available

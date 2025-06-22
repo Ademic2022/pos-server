@@ -1,6 +1,7 @@
+from decimal import Decimal
 from django.db import models
 from django.core.validators import RegexValidator
-from accounts.models import User
+from accounts.models import NULL, User
 from customers.choices import CustomerTypes, StatusChoices
 
 
@@ -10,10 +11,8 @@ class Customer(models.Model):
     """
 
     # Basic Information
-    name = models.CharField(max_length=100, help_text="Customer's full name")
-    email = models.EmailField(
-        blank=True, null=True, help_text="Customer's email address"
-    )
+    name = models.CharField(max_length=100)
+    email = models.EmailField(**NULL)
 
     # Phone validation
     phone_regex = RegexValidator(
@@ -25,7 +24,7 @@ class Customer(models.Model):
     )
 
     # Address Information
-    address = models.TextField(blank=True, null=True, help_text="Customer's address")
+    address = models.TextField(**NULL)
 
     # Customer Type and Status
     type = models.CharField(
@@ -44,38 +43,29 @@ class Customer(models.Model):
     balance = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=0.00,
-        help_text="Customer's current balance",
+        default=Decimal("0.00"),
     )
     credit_limit = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=0.00,
-        help_text="Customer's credit limit",
+        default=Decimal("0.00"),
     )
     total_purchases = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        default=0.00,
-        help_text="Total amount of purchases",
+        default=Decimal("0.00"),
     )
 
     # Tracking Information
-    last_purchase = models.DateTimeField(
-        blank=True, null=True, help_text="Date of last purchase"
-    )
-    notes = models.TextField(
-        blank=True, null=True, help_text="Additional notes about the customer"
-    )
+    last_purchase = models.DateTimeField(**NULL)
+    notes = models.TextField(**NULL)
 
     # Audit Fields
     created_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        **NULL,
         related_name="customers_created",
-        help_text="User who created this customer",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -92,30 +82,37 @@ class Customer(models.Model):
         """Return the join date as created_at for frontend compatibility"""
         return self.created_at
 
-    @property
     def available_credit(self):
         """Calculate available credit"""
-        return max(0, self.credit_limit - self.balance)
+        # Ensure both values are Decimal objects to avoid type errors
+        credit_limit = (
+            Decimal(str(self.credit_limit)) if self.credit_limit else Decimal("0.00")
+        )
+        balance = Decimal(str(self.balance)) if self.balance else Decimal("0.00")
+        return max(Decimal("0.00"), credit_limit - balance)
 
     @property
     def is_credit_available(self):
         """Check if customer has available credit"""
-        return self.available_credit > 0
+        return self.available_credit() > Decimal("0.00")
 
     def can_make_purchase(self, amount):
         """Check if customer can make a purchase of given amount"""
+        amount = Decimal(str(amount))
+
         if self.status != "active":
             return False
 
         if self.type == "retail":
             return True  # Retail customers pay immediately
 
-        # For wholesale customers, check credit limit
         return (self.balance + amount) <= self.credit_limit
 
     def add_purchase(self, amount, purchase_date=None):
         """Add a purchase to customer's record"""
         from django.utils import timezone
+
+        amount = Decimal(str(amount))
 
         self.balance += amount
         self.total_purchases += amount
@@ -126,5 +123,5 @@ class Customer(models.Model):
 
     def make_payment(self, amount):
         """Record a payment from customer"""
-        self.balance = max(0, self.balance - amount)
+        self.balance = max(Decimal("0.00"), self.balance - amount)
         self.save(update_fields=["balance", "updated_at"])

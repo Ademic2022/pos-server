@@ -14,6 +14,8 @@ class CustomerType(DjangoObjectType):
     type = CustomerTypeEnum()
     status = CustomerStatusEnum()
     balance = graphene.Decimal()
+    credit_limit = graphene.Decimal()
+    total_purchases = graphene.Decimal()
 
     class Meta:
         model = Customer
@@ -48,9 +50,11 @@ class CustomerType(DjangoObjectType):
         return self.join_date
 
     def resolve_available_credit(self, info):
-        return self.available_credit
+        """Resolve available credit by calling the method"""
+        return self.available_credit()
 
     def resolve_is_credit_available(self, info):
+        """Resolve credit availability by accessing the property"""
         return self.is_credit_available
 
     def resolve_type(self, info):
@@ -66,6 +70,14 @@ class CustomerType(DjangoObjectType):
     def resolve_balance(self, info):
         """Resolve customer balance"""
         return Decimal(self.balance or "0.00")
+
+    def resolve_credit_limit(self, info):
+        """Resolve customer credit limit"""
+        return Decimal(self.credit_limit or "0.00")
+
+    def resolve_total_purchases(self, info):
+        """Resolve total purchases made by the customer"""
+        return Decimal(self.total_purchases or "0.00")
 
 
 class CustomerStatsType(graphene.ObjectType):
