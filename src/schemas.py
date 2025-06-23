@@ -3,6 +3,8 @@ from accounts.schema.queries import accounts_query
 from accounts.schema.mutations import accounts_mutation
 from customers.schema.queries import customer_queries
 from customers.schema.mutations import customer_mutations
+from products.schema.queries import product_queries
+from products.schema.mutations import product_mutations
 from graphql_auth import mutations
 
 
@@ -24,7 +26,7 @@ class AuthMutation(graphene.ObjectType):
     revoke_token = mutations.RevokeToken.Field()
 
 
-class Query(accounts_query.Query, customer_queries.Query):
+class Query(accounts_query.Query, customer_queries.Query, product_queries.Query):
     pass
 
 
@@ -32,6 +34,7 @@ class Mutation(
     AuthMutation,
     accounts_mutation.Mutation,
     customer_mutations.Mutation,
+    product_mutations.Mutation,
 ):
     pass
 
