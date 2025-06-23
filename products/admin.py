@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from decimal import Decimal
-from products.models import Product
+from products.models import Product, StockData
 from products.choices import SaleType
 
 
@@ -128,3 +128,175 @@ class ProductAdmin(admin.ModelAdmin):
         self.message_user(request, f"Units reset to 0 for {updated} product(s).")
 
     reset_units.short_description = "Reset units to 0"
+
+
+@admin.register(StockData)
+class StockDataAdmin(admin.ModelAdmin):
+    """Admin interface for StockData model"""
+
+    # List display configuration
+    list_display = [
+        "id",
+        "supplier",
+        "delivered_quantity_display",
+        "formatted_price",
+        "cumulative_stock_display",
+        "remaining_stock_display",
+        "sold_stock_display",
+        "stock_utilization_badge",
+        "created_at",
+    ]
+
+    # List filters
+    list_filter = [
+        "supplier",
+        "created_at",
+        "updated_at",
+    ]
+
+    # Search functionality
+    search_fields = [
+        "supplier",
+    ]
+
+    # Ordering
+    ordering = ["-created_at"]
+
+    # Read-only fields
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+        "stock_utilization_percentage",
+        "previous_remaining_stock",
+    ]
+
+    # Fieldsets for organized form layout
+    fieldsets = (
+        (
+            "Delivery Information",
+            {"fields": ("delivered_quantity", "price", "supplier")},
+        ),
+        (
+            "Stock Levels",
+            {"fields": ("cumulative_stock", "remaining_stock", "sold_stock")},
+        ),
+        (
+            "Calculations",
+            {
+                "fields": ("stock_utilization_percentage", "previous_remaining_stock"),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "Timestamps",
+            {
+                "fields": ("created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
+    )
+
+    # Actions
+    actions = ["reset_sold_stock", "update_remaining_stock"]
+
+    def delivered_quantity_display(self, obj):
+        """Display delivered quantity with litres unit"""
+        return f"{float(obj.delivered_quantity):,.0f}L"
+
+    delivered_quantity_display.short_description = "Delivered"
+    delivered_quantity_display.admin_order_field = "delivered_quantity"
+
+    def formatted_price(self, obj):
+        """Display price with currency formatting"""
+        return f"${float(obj.price):.2f}/L"
+
+    formatted_price.short_description = "Price/Unit"
+    formatted_price.admin_order_field = "price"
+
+    def cumulative_stock_display(self, obj):
+        """Display cumulative stock with formatting"""
+        return f"{float(obj.cumulative_stock):,.0f}L"
+
+    cumulative_stock_display.short_description = "Cumulative Stock"
+    cumulative_stock_display.admin_order_field = "cumulative_stock"
+
+    def remaining_stock_display(self, obj):
+        """Display remaining stock with color coding"""
+        percentage = (
+            (obj.remaining_stock / obj.cumulative_stock * 100)
+            if obj.cumulative_stock > 0
+            else 0
+        )
+
+        if percentage < 20:
+            color = "red"
+        elif percentage < 50:
+            color = "orange"
+        else:
+            color = "green"
+
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{:.0f}L</span>',
+            color,
+            float(obj.remaining_stock),
+        )
+
+    remaining_stock_display.short_description = "Remaining"
+    remaining_stock_display.admin_order_field = "remaining_stock"
+
+    def sold_stock_display(self, obj):
+        """Display sold stock with formatting"""
+        return f"{float(obj.sold_stock):,.0f}L"
+
+    sold_stock_display.short_description = "Sold"
+    sold_stock_display.admin_order_field = "sold_stock"
+
+    def stock_utilization_badge(self, obj):
+        """Display stock utilization percentage with color-coded badge"""
+        percentage = obj.stock_utilization_percentage
+
+        if percentage < 30:
+            color = "orange"
+            status = "Low Sales"
+        elif percentage < 70:
+            color = "blue"
+            status = "Moderate"
+        else:
+            color = "green"
+            status = "High Sales"
+
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{:.1f}% ({})</span>',
+            color,
+            percentage,
+            status,
+        )
+
+    stock_utilization_badge.short_description = "Utilization"
+
+    # Admin actions
+    def reset_sold_stock(self, request, queryset):
+        """Reset sold stock to 0 for selected records"""
+        for stock in queryset:
+            stock.sold_stock = 0.0
+            stock.update_remaining_stock()
+            stock.save()
+
+        updated = queryset.count()
+        self.message_user(
+            request, f"Reset sold stock to 0 for {updated} stock record(s)."
+        )
+
+    reset_sold_stock.short_description = "Reset sold stock to 0"
+
+    def update_remaining_stock(self, request, queryset):
+        """Recalculate remaining stock for selected records"""
+        for stock in queryset:
+            stock.update_remaining_stock()
+            stock.save()
+
+        updated = queryset.count()
+        self.message_user(request, f"Updated remaining stock for {updated} record(s).")
+
+    update_remaining_stock.short_description = "Recalculate remaining stock"
