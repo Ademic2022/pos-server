@@ -15,9 +15,6 @@ class Query(graphene.ObjectType):
         description="Get a single product by ID",
     )
 
-    # Note: No custom resolve_products needed when using DjangoFilterConnectionField
-    # It automatically handles filtering, pagination, and returns the queryset
-
     def resolve_product(self, info, id):
         """Resolve single product by ID"""
         try:
