@@ -202,59 +202,90 @@ class StockDataAdmin(admin.ModelAdmin):
 
     def delivered_quantity_display(self, obj):
         """Display delivered quantity with litres unit"""
-        return f"{float(obj.delivered_quantity):,.0f}L"
+        try:
+            quantity = float(obj.delivered_quantity)
+            return f"{quantity:,.0f}L"
+        except (ValueError, TypeError):
+            return f"{obj.delivered_quantity}L"
 
     delivered_quantity_display.short_description = "Delivered"
     delivered_quantity_display.admin_order_field = "delivered_quantity"
 
     def formatted_price(self, obj):
         """Display price with currency formatting"""
-        return f"${float(obj.price):.2f}/L"
+        try:
+            price = float(obj.price)
+            return f"${price:.2f}/L"
+        except (ValueError, TypeError):
+            return f"${obj.price}/L"
 
     formatted_price.short_description = "Price/Unit"
     formatted_price.admin_order_field = "price"
 
     def cumulative_stock_display(self, obj):
         """Display cumulative stock with formatting"""
-        return f"{float(obj.cumulative_stock):,.0f}L"
+        try:
+            stock = float(obj.cumulative_stock)
+            return f"{stock:,.0f}L"
+        except (ValueError, TypeError):
+            return f"{obj.cumulative_stock}L"
 
     cumulative_stock_display.short_description = "Cumulative Stock"
     cumulative_stock_display.admin_order_field = "cumulative_stock"
 
     def remaining_stock_display(self, obj):
         """Display remaining stock with color coding"""
-        percentage = (
-            (obj.remaining_stock / obj.cumulative_stock * 100)
-            if obj.cumulative_stock > 0
-            else 0
-        )
+        try:
+            remaining_stock = float(obj.remaining_stock)
+            cumulative_stock = float(obj.cumulative_stock)
 
-        if percentage < 20:
-            color = "red"
-        elif percentage < 50:
-            color = "orange"
-        else:
-            color = "green"
+            percentage = (
+                (remaining_stock / cumulative_stock * 100)
+                if cumulative_stock > 0
+                else 0
+            )
 
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">{:.0f}L</span>',
-            color,
-            float(obj.remaining_stock),
-        )
+            if percentage < 20:
+                color = "red"
+            elif percentage < 50:
+                color = "orange"
+            else:
+                color = "green"
+
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">{:.0f}L</span>',
+                color,
+                remaining_stock,
+            )
+        except (ValueError, TypeError, ZeroDivisionError):
+            # Fallback for any formatting issues
+            return f"{obj.remaining_stock}L"
 
     remaining_stock_display.short_description = "Remaining"
     remaining_stock_display.admin_order_field = "remaining_stock"
 
     def sold_stock_display(self, obj):
         """Display sold stock with formatting"""
-        return f"{float(obj.sold_stock):,.0f}L"
+        try:
+            stock = float(obj.sold_stock)
+            return f"{stock:,.0f}L"
+        except (ValueError, TypeError):
+            return f"{obj.sold_stock}L"
 
     sold_stock_display.short_description = "Sold"
     sold_stock_display.admin_order_field = "sold_stock"
 
     def stock_utilization_badge(self, obj):
         """Display stock utilization percentage with color-coded badge"""
-        percentage = obj.stock_utilization_percentage
+        try:
+            # Ensure we get a numeric value
+            percentage = float(obj.stock_utilization_percentage)
+        except (ValueError, TypeError):
+            # Fallback calculation if property returns non-numeric value
+            if obj.cumulative_stock > 0:
+                percentage = (obj.sold_stock / obj.cumulative_stock) * 100
+            else:
+                percentage = 0.0
 
         if percentage < 30:
             color = "orange"
@@ -266,10 +297,13 @@ class StockDataAdmin(admin.ModelAdmin):
             color = "green"
             status = "High Sales"
 
+        # Format the percentage first, then use format_html
+        formatted_percentage = f"{percentage:.1f}%"
+
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{:.1f}% ({})</span>',
+            '<span style="color: {}; font-weight: bold;">{} ({})</span>',
             color,
-            percentage,
+            formatted_percentage,
             status,
         )
 

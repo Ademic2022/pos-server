@@ -36,7 +36,7 @@ class StockData(models.Model):
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(Decimal("0.0"))],
-        help_text="Price per unit of stock",
+        help_text="Stock price",
     )
     supplier = models.CharField(max_length=200, help_text="Stock supplier name")
     cumulative_stock = models.FloatField(
