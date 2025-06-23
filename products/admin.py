@@ -11,7 +11,6 @@ class ProductAdmin(admin.ModelAdmin):
 
     # List display configuration
     list_display = [
-        "id",
         "name",
         "formatted_price",
         "unit",
@@ -30,7 +29,6 @@ class ProductAdmin(admin.ModelAdmin):
 
     # Search functionality
     search_fields = [
-        "id",
         "name",
     ]
 
@@ -39,6 +37,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     # Read-only fields
     readonly_fields = [
+        "id",
         "created_at",
         "updated_at",
         "stock_status",
@@ -46,7 +45,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     # Fieldsets for organized form layout
     fieldsets = (
-        ("Product Information", {"fields": ("id", "name", "price", "unit")}),
+        ("Product Information", {"fields": ("name", "price", "unit")}),
         ("Classification", {"fields": ("sale_type",)}),
         (
             "Timestamps",
