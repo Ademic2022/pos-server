@@ -42,10 +42,23 @@ class ProductType(DjangoObjectType):
         return str(self.sale_type) if self.sale_type else None
 
     def resolve_stock(self, info):
-        """Calculate current stock - placeholder for inventory logic"""
-        # TODO: Implement stock calculation logic
-        # This might involve:
-        # - Initial inventory
-        # - Minus sales
-        # - Plus restocks/returns
-        return self.unit  # For now, return unit as stock
+        """Calculate current stock based on latest remaining stock and product unit size"""
+        from products.models import StockData
+
+        # Early return if unit is invalid
+        if self.unit <= 0:
+            return 0
+
+        # Get the latest remaining stock from StockData
+        latest_remaining_stock = StockData.get_latest_remaining_stock()
+
+        # Early return if no stock available
+        if latest_remaining_stock <= 0:
+            return 0
+
+        # Calculate how many units can be made from remaining stock
+        # Formula: remaining_stock / (unit * 25L per unit)
+        total_litres_needed = self.unit * 25.0
+
+        # Calculate available stock units and return whole number
+        return int(latest_remaining_stock / total_litres_needed)
