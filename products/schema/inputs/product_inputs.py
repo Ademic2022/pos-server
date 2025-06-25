@@ -1,5 +1,4 @@
 import graphene
-from decimal import Decimal
 from products.schema.enums.product_enums import SaleTypeEnum
 
 

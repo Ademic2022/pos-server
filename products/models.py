@@ -92,10 +92,15 @@ class StockData(models.Model):
         self.remaining_stock = self.cumulative_stock - self.sold_stock
 
     @classmethod
-    def create_new_delivery(
-        cls, delivered_quantity, price, supplier, previous_remaining=0.0
-    ):
+    def get_latest_remaining_stock(cls):
+        """Get the remaining stock from the most recent delivery"""
+        latest_stock = cls.objects.order_by('-created_at').first()
+        return latest_stock.remaining_stock if latest_stock else 0.0
+
+    @classmethod
+    def create_new_delivery(cls, delivered_quantity, price, supplier):
         """Create a new stock delivery with proper rolling stock calculation"""
+        previous_remaining = cls.get_latest_remaining_stock()
         cumulative_stock = previous_remaining + delivered_quantity
         remaining_stock = cumulative_stock  # No sales yet for new delivery
 

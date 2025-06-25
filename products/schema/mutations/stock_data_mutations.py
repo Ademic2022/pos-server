@@ -1,44 +1,10 @@
 import graphene
-from decimal import Decimal
 from products.models import StockData
 from products.schema.types.stock_data_type import StockDataType
 from products.schema.inputs.stock_data_inputs import (
-    StockDataInput,
-    UpdateStockDataInput,
+    UpdateStockDeliveryInput,
     RecordSaleInput,
 )
-
-
-class CreateStockData(graphene.Mutation):
-    """Create a new stock data record"""
-
-    class Arguments:
-        input = StockDataInput(required=True)
-
-    stock_data = graphene.Field(StockDataType)
-    success = graphene.Boolean()
-    message = graphene.String()
-
-    def mutate(self, info, input):
-        try:
-            stock_data = StockData(
-                delivered_quantity=input.delivered_quantity,
-                price=input.price,
-                supplier=input.supplier,
-                cumulative_stock=input.cumulative_stock,
-                remaining_stock=input.remaining_stock,
-                sold_stock=input.sold_stock or 0.0,
-            )
-            stock_data.full_clean()
-            stock_data.save()
-
-            return CreateStockData(
-                stock_data=stock_data,
-                success=True,
-                message="Stock data created successfully",
-            )
-        except Exception as e:
-            return CreateStockData(stock_data=None, success=False, message=str(e))
 
 
 class CreateStockDelivery(graphene.Mutation):
@@ -48,19 +14,21 @@ class CreateStockDelivery(graphene.Mutation):
         delivered_quantity = graphene.Float(required=True)
         price = graphene.Decimal(required=True)
         supplier = graphene.String(required=True)
-        previous_remaining = graphene.Float(default_value=0.0)
 
     stock_data = graphene.Field(StockDataType)
     success = graphene.Boolean()
     message = graphene.String()
 
-    def mutate(self, info, delivered_quantity, price, supplier, previous_remaining):
+    def mutate(self, info, **kwargs):
+        delivered_quantity = kwargs.get("delivered_quantity")
+        price = kwargs.get("price")
+        supplier = kwargs.get("supplier")
+
         try:
             stock_data = StockData.create_new_delivery(
                 delivered_quantity=delivered_quantity,
                 price=price,
                 supplier=supplier,
-                previous_remaining=previous_remaining,
             )
             stock_data.full_clean()
             stock_data.save()
@@ -74,11 +42,11 @@ class CreateStockDelivery(graphene.Mutation):
             return CreateStockDelivery(stock_data=None, success=False, message=str(e))
 
 
-class UpdateStockData(graphene.Mutation):
+class UpdateStockDelivery(graphene.Mutation):
     """Update existing stock data"""
 
     class Arguments:
-        input = UpdateStockDataInput(required=True)
+        input = UpdateStockDeliveryInput(required=True)
 
     stock_data = graphene.Field(StockDataType)
     success = graphene.Boolean()
@@ -95,27 +63,23 @@ class UpdateStockData(graphene.Mutation):
                 stock_data.price = input.price
             if input.supplier is not None:
                 stock_data.supplier = input.supplier
-            if input.cumulative_stock is not None:
-                stock_data.cumulative_stock = input.cumulative_stock
-            if input.remaining_stock is not None:
-                stock_data.remaining_stock = input.remaining_stock
             if input.sold_stock is not None:
                 stock_data.sold_stock = input.sold_stock
 
             stock_data.full_clean()
             stock_data.save()
 
-            return UpdateStockData(
+            return UpdateStockDelivery(
                 stock_data=stock_data,
                 success=True,
                 message="Stock data updated successfully",
             )
         except StockData.DoesNotExist:
-            return UpdateStockData(
+            return UpdateStockDelivery(
                 stock_data=None, success=False, message="Stock data not found"
             )
         except Exception as e:
-            return UpdateStockData(stock_data=None, success=False, message=str(e))
+            return UpdateStockDelivery(stock_data=None, success=False, message=str(e))
 
 
 class RecordSale(graphene.Mutation):
@@ -180,8 +144,8 @@ class DeleteStockData(graphene.Mutation):
 class Mutation(graphene.ObjectType):
     """All StockData mutations"""
 
-    create_stock_data = CreateStockData.Field()
+    # create_stock = CreateStock.Field()
     create_stock_delivery = CreateStockDelivery.Field()
-    update_stock_data = UpdateStockData.Field()
+    update_stock_delivery = UpdateStockDelivery.Field()
     record_sale = RecordSale.Field()
     delete_stock_data = DeleteStockData.Field()
