@@ -7,7 +7,7 @@ from products.schema.inputs.stock_data_inputs import (
 )
 
 
-class CreateStockDelivery(graphene.Mutation):
+class AddStockDelivery(graphene.Mutation):
     """Create a new stock delivery using the rolling stock system"""
 
     class Arguments:
@@ -33,13 +33,13 @@ class CreateStockDelivery(graphene.Mutation):
             stock_data.full_clean()
             stock_data.save()
 
-            return CreateStockDelivery(
+            return AddStockDelivery(
                 stock_data=stock_data,
                 success=True,
                 message=f"Stock delivery created: {delivered_quantity}L from {supplier}",
             )
         except Exception as e:
-            return CreateStockDelivery(stock_data=None, success=False, message=str(e))
+            return AddStockDelivery(stock_data=None, success=False, message=str(e))
 
 
 class UpdateStockDelivery(graphene.Mutation):
@@ -145,7 +145,7 @@ class Mutation(graphene.ObjectType):
     """All StockData mutations"""
 
     # create_stock = CreateStock.Field()
-    create_stock_delivery = CreateStockDelivery.Field()
+    add_stock_delivery = AddStockDelivery.Field()
     update_stock_delivery = UpdateStockDelivery.Field()
     record_sale = RecordSale.Field()
     delete_stock_data = DeleteStockData.Field()
