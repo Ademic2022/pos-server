@@ -67,18 +67,24 @@ class TestStockDataModel(TestCase):
 
     def test_create_new_delivery(self):
         """Test creating new delivery with rolling stock"""
+        # Get the current remaining stock (should be 800.0 from setup)
+        previous_remaining = StockData.get_latest_remaining_stock()
+
         new_delivery = StockData.create_new_delivery(
             delivered_quantity=500.0,
             price=Decimal("1.60"),
             supplier="New Test Supplier",
-            previous_remaining=300.0,
         )
 
         self.assertEqual(new_delivery.delivered_quantity, 500.0)
         self.assertEqual(new_delivery.price, Decimal("1.60"))
         self.assertEqual(new_delivery.supplier, "New Test Supplier")
-        self.assertEqual(new_delivery.cumulative_stock, 800.0)  # 300 + 500
-        self.assertEqual(new_delivery.remaining_stock, 800.0)  # No sales yet
+        # cumulative_stock should be previous_remaining + delivered_quantity
+        expected_cumulative = previous_remaining + 500.0
+        self.assertEqual(new_delivery.cumulative_stock, expected_cumulative)
+        self.assertEqual(
+            new_delivery.remaining_stock, expected_cumulative
+        )  # No sales yet
         self.assertEqual(new_delivery.sold_stock, 0.0)
 
     def test_str_representation(self):

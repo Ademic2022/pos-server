@@ -85,6 +85,8 @@ class StockData(models.Model):
 
     def record_sale(self, quantity_sold):
         """Record a sale and update remaining stock"""
+        if quantity_sold < 0:
+            raise ValueError("Cannot record negative sale quantity")
         if quantity_sold > self.remaining_stock:
             raise ValueError("Cannot sell more than remaining stock")
 
@@ -94,7 +96,7 @@ class StockData(models.Model):
     @classmethod
     def get_latest_remaining_stock(cls):
         """Get the remaining stock from the most recent delivery"""
-        latest_stock = cls.objects.order_by('-created_at').first()
+        latest_stock = cls.objects.order_by("-created_at").first()
         return latest_stock.remaining_stock if latest_stock else 0.0
 
     @classmethod

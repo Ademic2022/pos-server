@@ -7,6 +7,8 @@ from products.schema.queries import product_queries
 from products.schema.mutations import product_mutations
 from products.schema.queries import stock_data_queries
 from products.schema.mutations import stock_data_mutations
+from sales.schema.queries import sale_queries
+from sales.schema.mutations import sale_mutations
 from graphql_auth import mutations
 
 
@@ -33,6 +35,7 @@ class Query(
     customer_queries.Query,
     product_queries.Query,
     stock_data_queries.Query,
+    sale_queries.Query,
 ):
     pass
 
@@ -43,6 +46,7 @@ class Mutation(
     customer_mutations.Mutation,
     product_mutations.Mutation,
     stock_data_mutations.Mutation,
+    sale_mutations.Mutation,
 ):
     pass
 
