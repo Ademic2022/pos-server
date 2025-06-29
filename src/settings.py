@@ -177,11 +177,11 @@ GRAPHQL_JWT = {
     "JWT_VERIFY_EXPIRATION": True,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
     "JWT_AUTH_HEADER_PREFIX": "Bearer",
-    # "JWT_EXPIRATION_DELTA": datetime.timedelta(hours=24),  # Token expires in 24 hours
+    "JWT_EXPIRATION_DELTA": datetime.timedelta(hours=24),  # Token expires in 24 hours
     "JWT_REFRESH_EXPIRATION_DELTA": datetime.timedelta(
         days=7
     ),  # Refresh token expires in 7 days
-    # "JWT_ALLOW_REFRESH": True,  # Allow token refresh
-    # "JWT_AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
-    # "JWT_AUTH_TOKEN_PREFIX": "Bearer",
+    "JWT_ALLOW_REFRESH": True,  # Allow token refresh
+    "JWT_AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "JWT_AUTH_TOKEN_PREFIX": "Bearer",
 }
