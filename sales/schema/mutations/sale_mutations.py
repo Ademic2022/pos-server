@@ -178,13 +178,19 @@ class CreateSale(graphene.Mutation):
                     overpayment = abs(final_balance)
                     current_customer_balance = current_customer_balance + overpayment
 
+                    # Determine description based on whether customer had existing credit
+                    if credit_applied > 0:
+                        description = f"Additional payment made on sale {sale.transaction_id} (customer had existing credit)"
+                    else:
+                        description = f"Credit earned from overpayment on sale {sale.transaction_id}"
+
                     CustomerCredit.objects.create(
                         customer=customer,
                         transaction_type="credit_earned",
                         amount=overpayment,
                         balance_after=current_customer_balance,
                         sale=sale,
-                        description=f"Credit earned from overpayment on sale {sale.transaction_id}",
+                        description=description,
                     )
 
                     # Update customer balance
