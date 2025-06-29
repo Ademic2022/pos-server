@@ -108,17 +108,42 @@ class Query(graphene.ObjectType):
         # Get payment method totals
         payment_stats = Payment.objects.filter(sale__in=queryset).aggregate(
             cash_sales=Sum("amount", filter=Q(method="cash")),
-            credit_sales=Sum("amount", filter=Q(method="credit")),
+            transfer_sales=Sum("amount", filter=Q(method="transfer")),
+            credit_card_sales=Sum("amount", filter=Q(method="credit")),
+            part_payment_sales=Sum("amount", filter=Q(method="part_payment")),
+        )
+
+        # Get customer credit statistics
+        customer_credit_stats = CustomerCredit.objects.filter(
+            sale__in=queryset
+        ).aggregate(
+            customer_credit_applied=Sum(
+                "amount", filter=Q(transaction_type="credit_used")
+            ),
+            customer_credit_earned=Sum(
+                "amount", filter=Q(transaction_type="credit_earned")
+            ),
+            customer_debt_incurred=Sum(
+                "amount", filter=Q(transaction_type="debt_incurred")
+            ),
         )
 
         return SaleStatsType(
             total_sales=stats["total_sales"] or Decimal("0.00"),
-            total_transactions=stats["total_transactions"] or Decimal("0.00"),
+            total_transactions=stats["total_transactions"] or 0,
             average_sale_value=stats["average_sale_value"] or Decimal("0.00"),
             retail_sales=stats["retail_sales"] or Decimal("0.00"),
             wholesale_sales=stats["wholesale_sales"] or Decimal("0.00"),
             cash_sales=payment_stats["cash_sales"] or Decimal("0.00"),
-            credit_sales=payment_stats["credit_sales"] or Decimal("0.00"),
+            transfer_sales=payment_stats["transfer_sales"] or Decimal("0.00"),
+            credit_sales=payment_stats["credit_card_sales"] or Decimal("0.00"),
+            part_payment_sales=payment_stats["part_payment_sales"] or Decimal("0.00"),
+            customer_credit_applied=customer_credit_stats["customer_credit_applied"]
+            or Decimal("0.00"),
+            customer_credit_earned=customer_credit_stats["customer_credit_earned"]
+            or Decimal("0.00"),
+            customer_debt_incurred=customer_credit_stats["customer_debt_incurred"]
+            or Decimal("0.00"),
             total_discounts=stats["total_discounts"] or Decimal("0.00"),
         )
 
@@ -144,13 +169,17 @@ class Query(graphene.ObjectType):
 
             if date not in daily_data:
                 daily_data[date] = {
-                    "total_sales": 0,
+                    "total_sales": Decimal("0"),
                     "total_transactions": 0,
-                    "retail_sales": 0,
-                    "wholesale_sales": 0,
-                    "cash_payments": 0,
-                    "transfer_payments": 0,
-                    "credit_payments": 0,
+                    "retail_sales": Decimal("0"),
+                    "wholesale_sales": Decimal("0"),
+                    "cash_payments": Decimal("0"),
+                    "transfer_payments": Decimal("0"),
+                    "credit_card_payments": Decimal("0"),
+                    "part_payment_payments": Decimal("0"),
+                    "customer_credit_applied": Decimal("0"),
+                    "customer_credit_earned": Decimal("0"),
+                    "customer_debt_incurred": Decimal("0"),
                 }
 
             daily_data[date]["total_sales"] += sale.total
@@ -168,7 +197,18 @@ class Query(graphene.ObjectType):
                 elif payment.method == "transfer":
                     daily_data[date]["transfer_payments"] += payment.amount
                 elif payment.method == "credit":
-                    daily_data[date]["credit_payments"] += payment.amount
+                    daily_data[date]["credit_card_payments"] += payment.amount
+                elif payment.method == "part_payment":
+                    daily_data[date]["part_payment_payments"] += payment.amount
+
+            # Add customer credit totals for this sale
+            for credit in sale.customercredit_set.all():
+                if credit.transaction_type == "credit_used":
+                    daily_data[date]["customer_credit_applied"] += credit.amount
+                elif credit.transaction_type == "credit_earned":
+                    daily_data[date]["customer_credit_earned"] += credit.amount
+                elif credit.transaction_type == "debt_incurred":
+                    daily_data[date]["customer_debt_incurred"] += credit.amount
 
         # Convert to list of DailySalesType
         return [
@@ -180,7 +220,11 @@ class Query(graphene.ObjectType):
                 wholesale_sales=data["wholesale_sales"],
                 cash_payments=data["cash_payments"],
                 transfer_payments=data["transfer_payments"],
-                credit_payments=data["credit_payments"],
+                credit_card_payments=data["credit_card_payments"],
+                part_payment_payments=data["part_payment_payments"],
+                customer_credit_applied=data["customer_credit_applied"],
+                customer_credit_earned=data["customer_credit_earned"],
+                customer_debt_incurred=data["customer_debt_incurred"],
             )
             for date, data in sorted(daily_data.items())
         ]

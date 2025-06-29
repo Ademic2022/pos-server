@@ -17,9 +17,13 @@ class SaleType(DjangoObjectType):
 
     # Override sale_type to use enum
     sale_type = SaleTypeEnum()
+    # Explicitly define decimal fields
+    subtotal = graphene.Decimal()
     discount = graphene.Decimal()
+    total = graphene.Decimal()
+    balance = graphene.Decimal()
     credit_applied = graphene.Decimal()
-
+    amount_due = graphene.Decimal()
 
     class Meta:
         model = Sale
@@ -48,6 +52,30 @@ class SaleType(DjangoObjectType):
         """Resolve sale type to GraphQL enum"""
         # Convert Django TextChoices to string value for GraphQL enum
         return str(self.sale_type) if self.sale_type else None
+
+    def resolve_subtotal(self, info):
+        """Ensure subtotal is properly serialized"""
+        return self.subtotal if self.subtotal is not None else 0
+
+    def resolve_discount(self, info):
+        """Ensure discount is properly serialized"""
+        return self.discount if self.discount is not None else 0
+
+    def resolve_total(self, info):
+        """Ensure total is properly serialized"""
+        return self.total if self.total is not None else 0
+
+    def resolve_balance(self, info):
+        """Ensure balance is properly serialized"""
+        return self.balance if self.balance is not None else 0
+
+    def resolve_credit_applied(self, info):
+        """Ensure credit_applied is properly serialized"""
+        return self.credit_applied if self.credit_applied is not None else 0
+
+    def resolve_amount_due(self, info):
+        """Ensure amount_due is properly serialized"""
+        return self.amount_due if self.amount_due is not None else 0
 
     def resolve_items(self, info):
         return self.items.all()
@@ -147,8 +175,18 @@ class SaleStatsType(graphene.ObjectType):
     average_sale_value = graphene.Decimal()
     retail_sales = graphene.Decimal()
     wholesale_sales = graphene.Decimal()
+
+    # Payment method breakdown
     cash_sales = graphene.Decimal()
+    transfer_sales = graphene.Decimal()
     credit_sales = graphene.Decimal()
+    part_payment_sales = graphene.Decimal()
+
+    # Customer credit statistics
+    customer_credit_applied = graphene.Decimal()
+    customer_credit_earned = graphene.Decimal()
+    customer_debt_incurred = graphene.Decimal()
+
     total_discounts = graphene.Decimal()
 
 
@@ -160,6 +198,14 @@ class DailySalesType(graphene.ObjectType):
     total_transactions = graphene.Int()
     retail_sales = graphene.Decimal()
     wholesale_sales = graphene.Decimal()
+
+    # Payment method breakdown
     cash_payments = graphene.Decimal()
     transfer_payments = graphene.Decimal()
-    credit_payments = graphene.Decimal()
+    credit_card_payments = graphene.Decimal()  # Renamed for clarity
+    part_payment_payments = graphene.Decimal()
+
+    # Customer credit for the day
+    customer_credit_applied = graphene.Decimal()
+    customer_credit_earned = graphene.Decimal()
+    customer_debt_incurred = graphene.Decimal()
