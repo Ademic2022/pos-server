@@ -2,6 +2,7 @@
 GraphQL queries for Sales
 """
 
+from decimal import Decimal
 import graphene
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
@@ -111,14 +112,14 @@ class Query(graphene.ObjectType):
         )
 
         return SaleStatsType(
-            total_sales=stats["total_sales"] or 0,
-            total_transactions=stats["total_transactions"] or 0,
-            average_sale_value=stats["average_sale_value"] or 0,
-            retail_sales=stats["retail_sales"] or 0,
-            wholesale_sales=stats["wholesale_sales"] or 0,
-            cash_sales=payment_stats["cash_sales"] or 0,
-            credit_sales=payment_stats["credit_sales"] or 0,
-            total_discounts=stats["total_discounts"] or 0,
+            total_sales=stats["total_sales"] or Decimal("0.00"),
+            total_transactions=stats["total_transactions"] or Decimal("0.00"),
+            average_sale_value=stats["average_sale_value"] or Decimal("0.00"),
+            retail_sales=stats["retail_sales"] or Decimal("0.00"),
+            wholesale_sales=stats["wholesale_sales"] or Decimal("0.00"),
+            cash_sales=payment_stats["cash_sales"] or Decimal("0.00"),
+            credit_sales=payment_stats["credit_sales"] or Decimal("0.00"),
+            total_discounts=stats["total_discounts"] or Decimal("0.00"),
         )
 
     def resolve_daily_sales(self, info, date_from=None, date_to=None):
