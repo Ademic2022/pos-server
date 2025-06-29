@@ -1,4 +1,12 @@
 import pytest
+import os
+import django
+from django.conf import settings
+
+# Configure Django settings for tests
+if not settings.configured:
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.settings")
+    django.setup()
 
 
 @pytest.fixture
@@ -129,3 +137,57 @@ def user_with_role(role):
     from tests.factories import UserFactory
 
     return UserFactory(role=role)
+
+
+@pytest.fixture
+def user_with_token(db, client):
+    """Create a user and authenticate them for GraphQL requests"""
+    from tests.factories import UserFactory
+
+    user = UserFactory()
+    client.force_login(user)
+    return user
+
+
+@pytest.fixture
+def authenticated_user(db):
+    """Create an authenticated user for GraphQL context"""
+    from tests.factories import UserFactory
+
+    return UserFactory()
+
+
+@pytest.fixture
+def customer(db):
+    """Fixture for a single customer"""
+    from tests.factories import CustomerFactory
+
+    return CustomerFactory()
+
+
+@pytest.fixture
+def customers(db):
+    """Fixture for multiple customers"""
+    from tests.factories import CustomerFactory
+
+    return CustomerFactory.create_batch(5)
+
+
+@pytest.fixture
+def graphql_request_factory():
+    """Factory for creating GraphQL request objects"""
+    from django.test import RequestFactory
+
+    def _create_request(user=None, path="/graphql/"):
+        factory = RequestFactory()
+        request = factory.post(path)
+        request.user = user
+        request.session = {}
+        request.META = {
+            "REMOTE_ADDR": "127.0.0.1",
+            "HTTP_USER_AGENT": "Test Agent",
+            "HTTP_HOST": "testserver",
+        }
+        return request
+
+    return _create_request

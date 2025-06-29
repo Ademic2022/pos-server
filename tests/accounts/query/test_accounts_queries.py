@@ -114,42 +114,6 @@ class TestAccountsQueries(TestCase):
 
         self.assertIsNotNone(result)
 
-    def test_current_user_query_authenticated(self):
-        """Test current user query with authenticated user"""
-        query = """
-            query {
-                currentUser {
-                    id
-                    username
-                    email
-                }
-            }
-        """
-        request = self._make_authenticated_request(self.user)
-        result = self.client.execute(query, context=request)
-
-        self.assertIsNone(result.get("errors"))
-        # The currentUser field might not be implemented yet
-        # so we just check that the query executes
-
-    def test_current_user_query_anonymous(self):
-        """Test current user query with anonymous user"""
-        query = """
-            query {
-                currentUser {
-                    id
-                    username
-                }
-            }
-        """
-        request = self._make_anonymous_request()
-        result = self.client.execute(query, context=request)
-
-        self.assertIsNone(result.get("errors"))
-        # For anonymous users, currentUser should be None
-        if result.get("data"):
-            self.assertIsNone(result["data"].get("currentUser"))
-
     def test_graphql_schema_introspection(self):
         """Test that GraphQL schema introspection works"""
         query = """

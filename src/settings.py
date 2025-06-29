@@ -27,7 +27,9 @@ SECRET_KEY = "django-insecure-5ffe$jikr-x1%40n14^c9z%2v+16=m-28ei*ci#2e%a&d+krt(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Application definition
@@ -44,12 +46,13 @@ INSTALLED_APPS = [
     "graphql_auth",
     "corsheaders",
     "accounts",
-    # "customers",
-    # "products",
-    # "sales",
+    "customers",
+    "products",
+    "sales",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -158,11 +161,27 @@ GRAPHQL_AUTH = {
     "ALLOW_LOGIN_NOT_VERIFIED": config(
         "ALLOW_LOGIN_NOT_VERIFIED", default=True, cast=bool
     ),
-}
+    "UPDATE_MUTATION_FIELDS": {
+        "username": "String",
+        "first_name": "String",
+        "last_name": "String",
+        "phone": "String",
+        "address": "String",
+    },
+}  # https://django-graphql-auth.readthedocs.io/en/latest/settings/
 
 # GraphQL JWT settings
+import datetime
+
 GRAPHQL_JWT = {
     "JWT_VERIFY_EXPIRATION": True,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
     "JWT_AUTH_HEADER_PREFIX": "Bearer",
+    "JWT_EXPIRATION_DELTA": datetime.timedelta(hours=24),  # Token expires in 24 hours
+    "JWT_REFRESH_EXPIRATION_DELTA": datetime.timedelta(
+        days=7
+    ),  # Refresh token expires in 7 days
+    "JWT_ALLOW_REFRESH": True,  # Allow token refresh
+    "JWT_AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "JWT_AUTH_TOKEN_PREFIX": "Bearer",
 }

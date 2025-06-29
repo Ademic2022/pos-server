@@ -13,8 +13,22 @@ class TestAccountsMutations:
     def test_register_mutation(self, graphql_client, anonymous_request):
         """Test user registration mutation"""
         mutation = """
-            mutation RegisterUser($input: RegisterInput!) {
-                register(input: $input) {
+            mutation RegisterUser(
+                $username: String!,
+                $email: String!,
+                $firstName: String!,
+                $lastName: String!,
+                $password1: String!,
+                $password2: String!
+            ) {
+                register(
+                    username: $username,
+                    email: $email,
+                    firstName: $firstName,
+                    lastName: $lastName,
+                    password1: $password1,
+                    password2: $password2
+                ) {
                     success
                     errors
                     token
@@ -23,12 +37,12 @@ class TestAccountsMutations:
             }
         """
         variables = {
-            "input": {
-                "username": "newuser",
-                "email": "newuser@example.com",
-                "password1": "testpass123!",
-                "password2": "testpass123!",
-            }
+            "username": "newuser",
+            "email": "newuser@example.com",
+            "firstName": "New",
+            "lastName": "User",
+            "password1": "testpass123!",
+            "password2": "testpass123!",
         }
 
         result = graphql_client.execute(
@@ -192,8 +206,16 @@ class TestAccountsMutations:
         user.save()
 
         mutation = """
-            mutation PasswordChange($input: PasswordChangeInput!) {
-                passwordChange(input: $input) {
+            mutation PasswordChange(
+                $oldPassword: String!,
+                $newPassword1: String!,
+                $newPassword2: String!
+            ) {
+                passwordChange(
+                    oldPassword: $oldPassword,
+                    newPassword1: $newPassword1,
+                    newPassword2: $newPassword2
+                ) {
                     success
                     errors
                     token
@@ -202,11 +224,9 @@ class TestAccountsMutations:
             }
         """
         variables = {
-            "input": {
-                "oldPassword": "oldpassword123",
-                "newPassword1": "newpassword123!",
-                "newPassword2": "newpassword123!",
-            }
+            "oldPassword": "oldpassword123",
+            "newPassword1": "newpassword123!",
+            "newPassword2": "newpassword123!",
         }
 
         request = authenticated_request(user)
@@ -223,14 +243,20 @@ class TestAccountsMutations:
     def test_update_account_mutation(self, graphql_client, authenticated_request, user):
         """Test account update mutation"""
         mutation = """
-            mutation UpdateAccount($input: UpdateAccountInput!) {
-                updateAccount(input: $input) {
+            mutation UpdateAccount(
+                $firstName: String,
+                $lastName: String
+            ) {
+                updateAccount(
+                    firstName: $firstName,
+                    lastName: $lastName
+                ) {
                     success
                     errors
                 }
             }
         """
-        variables = {"input": {"firstName": "Updated", "lastName": "Name"}}
+        variables = {"firstName": "Updated", "lastName": "Name"}
 
         request = authenticated_request(user)
         result = graphql_client.execute(mutation, variables=variables, context=request)
