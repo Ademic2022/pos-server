@@ -17,6 +17,9 @@ class SaleType(DjangoObjectType):
 
     # Override sale_type to use enum
     sale_type = SaleTypeEnum()
+    discount = graphene.Decimal()
+    credit_applied = graphene.Decimal()
+
 
     class Meta:
         model = Sale
@@ -56,11 +59,23 @@ class SaleType(DjangoObjectType):
 class SaleItemType(DjangoObjectType):
     """GraphQL type for SaleItem model"""
 
+    # Override decimal fields to ensure proper serialization
+    unit_price = graphene.Decimal()
+    total_price = graphene.Decimal()
+
     class Meta:
         model = SaleItem
         fields = ("id", "sale", "product", "quantity", "unit_price", "total_price")
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
+
+    def resolve_unit_price(self, info):
+        """Ensure unit_price is properly serialized"""
+        return self.unit_price if self.unit_price is not None else 0
+
+    def resolve_total_price(self, info):
+        """Ensure total_price is properly serialized"""
+        return self.total_price if self.total_price is not None else 0
 
 
 class PaymentType(DjangoObjectType):
@@ -68,12 +83,18 @@ class PaymentType(DjangoObjectType):
 
     # Override method to use enum
     method = PaymentMethodEnum()
+    # Override decimal field
+    amount = graphene.Decimal()
 
     class Meta:
         model = Payment
         fields = ("id", "sale", "method", "amount", "created_at", "updated_at")
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
+
+    def resolve_amount(self, info):
+        """Ensure amount is properly serialized"""
+        return self.amount if self.amount is not None else 0
 
     def resolve_method(self, info):
         """Resolve payment method to GraphQL enum"""
@@ -85,6 +106,9 @@ class CustomerCreditType(DjangoObjectType):
 
     # Override transaction_type to use enum
     transaction_type = TransactionTypeEnum()
+    # Override decimal fields
+    amount = graphene.Decimal()
+    balance_after = graphene.Decimal()
 
     class Meta:
         model = CustomerCredit
@@ -101,6 +125,14 @@ class CustomerCreditType(DjangoObjectType):
         )
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
+
+    def resolve_amount(self, info):
+        """Ensure amount is properly serialized"""
+        return self.amount if self.amount is not None else 0
+
+    def resolve_balance_after(self, info):
+        """Ensure balance_after is properly serialized"""
+        return self.balance_after if self.balance_after is not None else 0
 
     def resolve_transaction_type(self, info):
         """Resolve transaction type to GraphQL enum"""

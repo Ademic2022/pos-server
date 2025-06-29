@@ -11,6 +11,7 @@ class CustomerAdmin(admin.ModelAdmin):
 
     list_display = (
         "name",
+        "id",
         "email",
         "phone",
         "type",

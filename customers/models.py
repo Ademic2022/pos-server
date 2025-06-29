@@ -89,7 +89,7 @@ class Customer(models.Model):
             Decimal(str(self.credit_limit)) if self.credit_limit else Decimal("0.00")
         )
         balance = Decimal(str(self.balance)) if self.balance else Decimal("0.00")
-        return max(Decimal("0.00"), credit_limit - balance)
+        return max(Decimal("0.00"), credit_limit + balance)
 
     @property
     def is_credit_available(self):
@@ -125,3 +125,22 @@ class Customer(models.Model):
         """Record a payment from customer"""
         self.balance = max(Decimal("0.00"), self.balance - amount)
         self.save(update_fields=["balance", "updated_at"])
+
+    def get_current_credit_balance(self):
+        """Get current credit balance from CustomerCredit transactions"""
+        # Import here to avoid circular import
+        from sales.models import CustomerCredit
+
+        latest_credit = (
+            CustomerCredit.objects.filter(customer=self).order_by("-created_at").first()
+        )
+
+        if latest_credit:
+            return Decimal(str(latest_credit.balance_after))
+        else:
+            # If no credit transactions, use the customer balance field
+            return Decimal(str(self.balance or "0.00"))
+
+    def has_available_credit(self):
+        """Check if customer has positive credit balance"""
+        return self.get_current_credit_balance() > Decimal("0.00")

@@ -68,8 +68,8 @@ class CustomerType(DjangoObjectType):
         return str(self.status) if self.status else None
 
     def resolve_balance(self, info):
-        """Resolve customer balance"""
-        return Decimal(self.balance or "0.00")
+        """Resolve customer balance using latest CustomerCredit transactions"""
+        return self.get_current_credit_balance()
 
     def resolve_credit_limit(self, info):
         """Resolve customer credit limit"""

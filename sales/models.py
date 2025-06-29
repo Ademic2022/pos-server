@@ -1,3 +1,4 @@
+from decimal import Decimal
 import uuid
 from django.db import models
 from accounts.models import NULL
@@ -12,13 +13,26 @@ class Sale(models.Model):
         max_length=20, choices=SaleTypeChoices.choices, default=SaleTypeChoices.RETAIL
     )
     transaction_id = models.CharField(max_length=50, unique=True)
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    credit_applied = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    amount_due = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    subtotal = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal("0.00")
+    )
+    discount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal("0.00")
+    )
+    total = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal("0.00")
+    )
+    balance = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal("0.00")
+    )
+    credit_applied = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal("0.00")
+    )
+    amount_due = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal("0.00")
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -32,7 +46,8 @@ class Sale(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.transaction_id} - {self.customer.name} - ₦{self.subtotal:,.2f}"
+        customer_name = self.customer.name if self.customer else "Walk-in"
+        return f"{self.transaction_id} - {customer_name} - ₦{self.subtotal:,.2f}"
 
     def calculate_totals(self):
         """Recalculate all totals based on sale items"""

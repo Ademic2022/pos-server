@@ -17,3 +17,5 @@ class TransactionTypeChoices(models.TextChoices):
     CREDIT_ADDED = "credit_added", "Credit Added"
     CREDIT_USED = "credit_used", "Credit Used"
     CREDIT_REFUND = "credit_refund", "Credit Refund"
+    CREDIT_EARNED = "credit_earned", "Credit Earned (Overpayment)"
+    DEBT_INCURRED = "debt_incurred", "Debt Incurred (Underpayment)"

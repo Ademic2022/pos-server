@@ -2,6 +2,7 @@
 GraphQL mutations for Sales
 """
 
+import traceback
 import graphene
 from decimal import Decimal
 from django.db import transaction
@@ -47,8 +48,8 @@ class CreateSale(graphene.Mutation):
             sale = Sale.objects.create(
                 customer=customer,
                 sale_type=input.sale_type.value,  # Use .value to get the string value
-                discount=input.discount or 0,
-                credit_applied=input.credit_applied or 0,
+                discount=input.discount,
+                # Don't set credit_applied here - we'll calculate it automatically
             )
 
             # Add sale items
@@ -104,46 +105,104 @@ class CreateSale(graphene.Mutation):
             # Update sale totals
             sale.subtotal = subtotal
             sale.total = subtotal - sale.discount
-            sale.amount_due = max(0, sale.total - sale.credit_applied)
             sale.save()
 
-            # Add payments
+            # Add payments and calculate total payments
             total_payments = Decimal("0.00")
             for payment_input in input.payments:
                 Payment.objects.create(
                     sale=sale,
-                    method=str(payment_input.method),  # Convert enum to string
+                    method=str(payment_input.method.value),  # Convert enum to string
                     amount=payment_input.amount,
                 )
                 total_payments += payment_input.amount
 
-            # Update balance
-            sale.balance = sale.total - total_payments
+            # AUTOMATIC CREDIT HANDLING LOGIC
+            credit_applied = Decimal("0.00")
+            current_customer_balance = Decimal("0.00")
+
+            if customer:
+                # Get customer's current credit balance at start
+                current_customer_balance = customer.get_current_credit_balance()
+                print("Current customer balance:", current_customer_balance)
+
+                # ALWAYS apply available credit first (if customer has any)
+                if current_customer_balance > 0:
+                    # Apply credit up to the sale total
+                    credit_applied = min(current_customer_balance, sale.total)
+
+                    # Update customer balance after credit use
+                    current_customer_balance = current_customer_balance - credit_applied
+
+                    # Create credit_used transaction
+                    CustomerCredit.objects.create(
+                        customer=customer,
+                        transaction_type="credit_used",
+                        amount=credit_applied,
+                        balance_after=current_customer_balance,
+                        sale=sale,
+                        description=f"Credit applied to sale {sale.transaction_id}",
+                    )
+
+                    # Update customer balance
+                    customer.balance = current_customer_balance
+                    customer.save()
+
+                # Calculate net amount owed after credit is applied
+                amount_owed_after_credit = sale.total - credit_applied
+                print("Amount owed after credit:", amount_owed_after_credit)
+                print("Total payments received:", total_payments)
+
+                # Calculate final balance after payments
+                final_balance = amount_owed_after_credit - total_payments
+
+                if final_balance > 0:
+                    # Customer still owes money - record as debt
+                    current_customer_balance = current_customer_balance - final_balance
+
+                    CustomerCredit.objects.create(
+                        customer=customer,
+                        transaction_type="debt_incurred",
+                        amount=final_balance,
+                        balance_after=current_customer_balance,
+                        sale=sale,
+                        description=f"Debt incurred from underpayment on sale {sale.transaction_id}",
+                    )
+
+                    # Update customer balance
+                    customer.balance = current_customer_balance
+                    customer.save()
+
+                elif final_balance < 0:
+                    # Customer overpaid - record the overpayment as credit earned
+                    overpayment = abs(final_balance)
+                    current_customer_balance = current_customer_balance + overpayment
+
+                    CustomerCredit.objects.create(
+                        customer=customer,
+                        transaction_type="credit_earned",
+                        amount=overpayment,
+                        balance_after=current_customer_balance,
+                        sale=sale,
+                        description=f"Credit earned from overpayment on sale {sale.transaction_id}",
+                    )
+
+                    # Update customer balance
+                    customer.balance = current_customer_balance
+                    customer.save()
+
+            # Update sale with final calculated values
+            sale.credit_applied = credit_applied
+            amount_after_credit_and_payments = (
+                sale.total - credit_applied - total_payments
+            )
+            sale.amount_due = Decimal(max(0, amount_after_credit_and_payments))
+            sale.balance = Decimal(sale.amount_due)  # Balance is what's still owed
             sale.save()
 
-            # Handle customer credit if used
-            if input.credit_applied and input.credit_applied > 0 and customer:
-                # Get current balance
-                latest_credit = (
-                    CustomerCredit.objects.filter(customer=customer)
-                    .order_by("-created_at")
-                    .first()
-                )
-
-                current_balance = latest_credit.balance_after if latest_credit else 0
-
-                if current_balance < input.credit_applied:
-                    raise ValueError("Insufficient credit balance")
-
-                # Create credit transaction
-                CustomerCredit.objects.create(
-                    customer=customer,
-                    transaction_type="credit_used",
-                    amount=input.credit_applied,
-                    balance_after=current_balance - input.credit_applied,
-                    sale=sale,
-                    description=f"Credit used for sale {sale.transaction_id}",
-                )
+            print(
+                f"Final calculation: Sale total={sale.total}, Credit applied={credit_applied}, Payments={total_payments}, Amount due={sale.amount_due}"
+            )
 
             return CreateSale(
                 success=True,
@@ -152,6 +211,7 @@ class CreateSale(graphene.Mutation):
             )
 
         except Exception as e:
+            traceback.print_exc()  # Log the exception for debugging
             return CreateSale(
                 success=False,
                 message=f"Failed to create sale: {str(e)}",
@@ -170,9 +230,13 @@ class UpdateSale(graphene.Mutation):
     sale = graphene.Field(SaleType)
     errors = graphene.List(graphene.String)
 
+    @transaction.atomic
     def mutate(self, info, input):
         try:
             sale = Sale.objects.get(id=input.sale_id)
+
+            # Store original customer for credit recalculation
+            original_customer = sale.customer
 
             if input.customer_id:
                 try:
@@ -188,16 +252,51 @@ class UpdateSale(graphene.Mutation):
             if input.discount is not None:
                 sale.discount = input.discount
 
-            if input.credit_applied is not None:
-                sale.credit_applied = input.credit_applied
-
-            # Recalculate totals
+            # Recalculate total based on new discount
             sale.total = sale.subtotal - sale.discount
-            sale.amount_due = max(0, sale.total - sale.credit_applied)
+
+            # If customer changed or discount changed, recalculate credit automatically
+            if sale.customer:
+                # Calculate total payments already made
+                total_payments = sum(
+                    payment.amount for payment in sale.payments.all() if payment.amount
+                )
+
+                # Get customer's current credit balance
+                current_customer_balance = sale.customer.get_current_credit_balance()
+
+                # Calculate how much is owed after payments
+                amount_owed_after_payments = sale.total - total_payments
+
+                # Reset credit applied and recalculate
+                credit_applied = Decimal("0.00")
+
+                if amount_owed_after_payments > 0 and current_customer_balance > 0:
+                    # Apply credit to cover shortfall
+                    credit_applied = min(
+                        current_customer_balance, amount_owed_after_payments
+                    )
+
+                sale.credit_applied = credit_applied
+                sale.amount_due = Decimal(
+                    max(0, sale.total - total_payments - credit_applied)
+                )
+                sale.balance = Decimal(sale.amount_due)
+            else:
+                # No customer, no credit applied
+                total_payments = sum(
+                    payment.amount for payment in sale.payments.all() if payment.amount
+                )
+                sale.credit_applied = Decimal("0.00")
+                sale.amount_due = Decimal(max(0, sale.total - total_payments))
+                sale.balance = Decimal(sale.amount_due)
+
             sale.save()
 
             return UpdateSale(
-                success=True, message="Sale updated successfully", sale=sale
+                success=True,
+                message="Sale updated successfully with automatic credit recalculation",
+                sale=sale,
             )
 
         except Sale.DoesNotExist:
