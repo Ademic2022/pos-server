@@ -80,6 +80,11 @@ class CustomerType(DjangoObjectType):
         return Decimal(self.total_purchases or "0.00")
 
 
+class ValueCountPair(graphene.ObjectType):
+    value = graphene.Decimal()
+    count = graphene.Int()
+
+
 class CustomerStatsType(graphene.ObjectType):
     """GraphQL type for customer statistics"""
 
@@ -90,4 +95,4 @@ class CustomerStatsType(graphene.ObjectType):
     inactive_customers = graphene.Int()
     blocked_customers = graphene.Int()
     total_credit_issued = graphene.Decimal()
-    total_outstanding_balance = graphene.Decimal()
+    debt = graphene.Field(ValueCountPair)

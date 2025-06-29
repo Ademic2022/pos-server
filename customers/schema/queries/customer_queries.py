@@ -4,7 +4,11 @@ from django.db.models import Q, Sum, Count
 from graphene_django.filter import DjangoFilterConnectionField
 from graphql_jwt.decorators import login_required
 from customers.models import Customer
-from customers.schema.types.customer_type import CustomerType, CustomerStatsType
+from customers.schema.types.customer_type import (
+    CustomerType,
+    CustomerStatsType,
+    ValueCountPair,
+)
 
 
 class Query(graphene.ObjectType):
@@ -43,17 +47,24 @@ class Query(graphene.ObjectType):
             inactive_customers=Count("id", filter=Q(status="inactive")),
             blocked_customers=Count("id", filter=Q(status="blocked")),
             total_credit_issued=Sum("credit_limit"),
-            total_outstanding_balance=Sum("balance"),
+            total_debt_amount=Sum("balance", filter=Q(balance__lt=0)),
+            total_debt_count=Count("balance", filter=Q(balance__lt=0)),
         )
 
         return CustomerStatsType(
-            total_customers=stats["total_customers"] or Decimal("0.00"),
-            retail_customers=stats["retail_customers"] or Decimal("0.00"),
-            wholesale_customers=stats["wholesale_customers"] or Decimal("0.00"),
-            active_customers=stats["active_customers"] or Decimal("0.00"),
-            inactive_customers=stats["inactive_customers"] or Decimal("0.00"),
-            blocked_customers=stats["blocked_customers"] or Decimal("0.00"),
+            total_customers=stats["total_customers"] or 0,
+            retail_customers=stats["retail_customers"] or 0,
+            wholesale_customers=stats["wholesale_customers"] or 0,
+            active_customers=stats["active_customers"] or 0,
+            inactive_customers=stats["inactive_customers"] or 0,
+            blocked_customers=stats["blocked_customers"] or 0,
             total_credit_issued=stats["total_credit_issued"] or Decimal("0.00"),
-            total_outstanding_balance=stats["total_outstanding_balance"]
-            or Decimal("0.00"),
+            debt=ValueCountPair(
+                value=(
+                    abs(stats["total_debt_amount"])
+                    if stats["total_debt_amount"]
+                    else Decimal("0.00")
+                ),
+                count=stats["total_debt_count"] or 0,
+            ),
         )
