@@ -1,12 +1,13 @@
 import graphene
+from customers.choices import CustomerTypes, StatusChoices
 
 
 class CustomerTypeEnum(graphene.Enum):
-    RETAIL = "retail"
-    WHOLESALE = "wholesale"
+
+    class Meta:
+        enum = CustomerTypes
 
 
 class CustomerStatusEnum(graphene.Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    BLOCKED = "blocked"
+    class Meta:
+        enum = StatusChoices

@@ -4,18 +4,11 @@ GraphQL queries for Sales
 
 from decimal import Decimal
 import graphene
-from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from django.db.models import Sum, Count, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
 from sales.models import Sale, Payment, CustomerCredit
-from sales.filters import (
-    SaleFilter,
-    SaleItemFilter,
-    PaymentFilter,
-    CustomerCreditFilter,
-)
 from sales.schema.types.sale_types import (
     SaleType,
     SaleItemType,
@@ -32,22 +25,18 @@ class Query(graphene.ObjectType):
     # Connection fields with filtering and pagination
     sales = DjangoFilterConnectionField(
         SaleType,
-        filterset_class=SaleFilter,
         description="Get sales with filtering and pagination",
     )
     sale_items = DjangoFilterConnectionField(
         SaleItemType,
-        filterset_class=SaleItemFilter,
         description="Get sale items with filtering and pagination",
     )
     payments = DjangoFilterConnectionField(
         PaymentType,
-        filterset_class=PaymentFilter,
         description="Get payments with filtering and pagination",
     )
     customer_credits = DjangoFilterConnectionField(
         CustomerCreditType,
-        filterset_class=CustomerCreditFilter,
         description="Get customer credits with filtering and pagination",
     )
 
