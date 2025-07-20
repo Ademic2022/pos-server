@@ -18,6 +18,7 @@ from sales.schema.types.sale_types import (
     SaleStatsType,
     DailySalesType,
 )
+from customers.schema.types.customer_type import ValueCountPair
 
 
 class Query(graphene.ObjectType):
@@ -202,8 +203,11 @@ class Query(graphene.ObjectType):
             customer_credit_earned=Sum(
                 "amount", filter=Q(transaction_type="credit_earned")
             ),
-            customer_debt_incurred=Sum(
+            customer_debt_incurred_sum=Sum(
                 "amount", filter=Q(transaction_type="debt_incurred")
+            ),
+            customer_debt_incurred_count=Count(
+                "id", filter=Q(transaction_type="debt_incurred")
             ),
         )
 
@@ -221,8 +225,10 @@ class Query(graphene.ObjectType):
             or Decimal("0.00"),
             customer_credit_earned=customer_credit_stats["customer_credit_earned"]
             or Decimal("0.00"),
-            customer_debt_incurred=customer_credit_stats["customer_debt_incurred"]
-            or Decimal("0.00"),
+            customer_debt_incurred=ValueCountPair(
+                value=customer_credit_stats["customer_debt_incurred_sum"] or Decimal("0.00"),
+                count=customer_credit_stats["customer_debt_incurred_count"] or 0
+            ),
             total_discounts=stats["total_discounts"] or Decimal("0.00"),
             # Meta information
             date_range_from=date_from,

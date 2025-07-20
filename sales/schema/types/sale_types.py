@@ -4,6 +4,7 @@ GraphQL types for Sales models
 
 import graphene
 from graphene_django import DjangoObjectType
+from customers.schema.types.customer_type import ValueCountPair
 from sales.models import Sale, SaleItem, Payment, CustomerCredit
 from sales.schema.enums.sale_enums import (
     SaleTypeEnum,
@@ -222,7 +223,7 @@ class SaleStatsType(graphene.ObjectType):
     # Customer credit statistics
     customer_credit_applied = graphene.Decimal()
     customer_credit_earned = graphene.Decimal()
-    customer_debt_incurred = graphene.Decimal()
+    customer_debt_incurred = graphene.Field(ValueCountPair)
 
     total_discounts = graphene.Decimal()
 
