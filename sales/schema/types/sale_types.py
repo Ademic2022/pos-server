@@ -6,11 +6,18 @@ import graphene
 from graphene_django import DjangoObjectType
 from customers.schema.types.customer_type import ValueCountPair
 from sales.models import Sale, SaleItem, Payment, CustomerCredit
+from sales.schema.enums.sale_enums import (
+    SaleTypeEnum,
+    PaymentMethodEnum,
+    TransactionTypeEnum,
+)
 
 
 class SaleType(DjangoObjectType):
     """GraphQL type for Sale model"""
 
+    # Override sale_type to use enum
+    sale_type = SaleTypeEnum()
     # Explicitly define decimal fields
     subtotal = graphene.Decimal()
     discount = graphene.Decimal()
@@ -89,7 +96,7 @@ class SaleItemType(DjangoObjectType):
     class Meta:
         model = SaleItem
         fields = ("id", "sale", "product", "quantity", "unit_price", "total_price")
-        # Enable relay-style connections
+        
         interfaces = (graphene.relay.Node,)
 
     def resolve_unit_price(self, info):
@@ -104,13 +111,15 @@ class SaleItemType(DjangoObjectType):
 class PaymentType(DjangoObjectType):
     """GraphQL type for Payment model"""
 
+    # Override method to use enum
+    method = PaymentMethodEnum()
     # Override decimal field
     amount = graphene.Decimal()
 
     class Meta:
         model = Payment
         fields = ("id", "sale", "method", "amount", "created_at", "updated_at")
-
+        
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
@@ -126,6 +135,8 @@ class PaymentType(DjangoObjectType):
 class CustomerCreditType(DjangoObjectType):
     """GraphQL type for CustomerCredit model"""
 
+    # Override transaction_type to use enum
+    transaction_type = TransactionTypeEnum()
     # Override decimal fields
     amount = graphene.Decimal()
     balance_after = graphene.Decimal()
@@ -143,7 +154,7 @@ class CustomerCreditType(DjangoObjectType):
             "created_at",
             "updated_at",
         )
-
+        
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
