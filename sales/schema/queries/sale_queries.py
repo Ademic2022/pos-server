@@ -197,11 +197,17 @@ class Query(graphene.ObjectType):
         customer_credit_stats = CustomerCredit.objects.filter(
             sale__in=queryset
         ).aggregate(
-            customer_credit_applied=Sum(
+            customer_credit_applied_sum=Sum(
                 "amount", filter=Q(transaction_type="credit_used")
             ),
-            customer_credit_earned=Sum(
+            customer_credit_applied_count=Count(
+                "id", filter=Q(transaction_type="credit_used")
+            ),
+            customer_credit_earned_sum=Sum(
                 "amount", filter=Q(transaction_type="credit_earned")
+            ),
+            customer_credit_earned_count=Count(
+                "id", filter=Q(transaction_type="credit_earned")
             ),
             customer_debt_incurred_sum=Sum(
                 "amount", filter=Q(transaction_type="debt_incurred")
@@ -221,10 +227,16 @@ class Query(graphene.ObjectType):
             transfer_sales=payment_stats["transfer_sales"] or Decimal("0.00"),
             credit_sales=payment_stats["credit_card_sales"] or Decimal("0.00"),
             part_payment_sales=payment_stats["part_payment_sales"] or Decimal("0.00"),
-            customer_credit_applied=customer_credit_stats["customer_credit_applied"]
-            or Decimal("0.00"),
-            customer_credit_earned=customer_credit_stats["customer_credit_earned"]
-            or Decimal("0.00"),
+            customer_credit_applied=ValueCountPair(
+                value=customer_credit_stats["customer_credit_applied_sum"]
+                or Decimal("0.00"),
+                count=customer_credit_stats["customer_credit_applied_count"] or 0,
+            ),
+            customer_credit_earned=ValueCountPair(
+                value=customer_credit_stats["customer_credit_earned_sum"]
+                or Decimal("0.00"),
+                count=customer_credit_stats["customer_credit_earned_count"] or 0,
+            ),
             customer_debt_incurred=ValueCountPair(
                 value=customer_credit_stats["customer_debt_incurred_sum"]
                 or Decimal("0.00"),

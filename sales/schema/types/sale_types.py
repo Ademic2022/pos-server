@@ -221,8 +221,8 @@ class SaleStatsType(graphene.ObjectType):
     part_payment_sales = graphene.Decimal()
 
     # Customer credit statistics
-    customer_credit_applied = graphene.Decimal()
-    customer_credit_earned = graphene.Decimal()
+    customer_credit_applied = graphene.Field(ValueCountPair)
+    customer_credit_earned = graphene.Field(ValueCountPair)
     customer_debt_incurred = graphene.Field(ValueCountPair)
 
     total_discounts = graphene.Decimal()
