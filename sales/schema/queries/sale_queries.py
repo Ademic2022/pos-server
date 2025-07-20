@@ -156,7 +156,7 @@ class Query(graphene.ObjectType):
             )
         if payment_method:
             queryset = queryset.filter(payments__method=payment_method)
-            
+
         # Apply amount filters
         if total_gte is not None:
             queryset = queryset.filter(total__gte=total_gte)
@@ -226,8 +226,9 @@ class Query(graphene.ObjectType):
             customer_credit_earned=customer_credit_stats["customer_credit_earned"]
             or Decimal("0.00"),
             customer_debt_incurred=ValueCountPair(
-                value=customer_credit_stats["customer_debt_incurred_sum"] or Decimal("0.00"),
-                count=customer_credit_stats["customer_debt_incurred_count"] or 0
+                value=customer_credit_stats["customer_debt_incurred_sum"]
+                or Decimal("0.00"),
+                count=customer_credit_stats["customer_debt_incurred_count"] or 0,
             ),
             total_discounts=stats["total_discounts"] or Decimal("0.00"),
             # Meta information
