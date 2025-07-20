@@ -6,18 +6,11 @@ import graphene
 from graphene_django import DjangoObjectType
 from customers.schema.types.customer_type import ValueCountPair
 from sales.models import Sale, SaleItem, Payment, CustomerCredit
-from sales.schema.enums.sale_enums import (
-    SaleTypeEnum,
-    PaymentMethodEnum,
-    TransactionTypeEnum,
-)
 
 
 class SaleType(DjangoObjectType):
     """GraphQL type for Sale model"""
 
-    # Override sale_type to use enum
-    sale_type = SaleTypeEnum()
     # Explicitly define decimal fields
     subtotal = graphene.Decimal()
     discount = graphene.Decimal()
@@ -42,19 +35,7 @@ class SaleType(DjangoObjectType):
             "created_at",
             "updated_at",
         )
-        filter_fields = {
-            "customer": ["exact"],
-            "sale_type": ["exact"],
-            "transaction_id": ["exact", "icontains"],
-            "subtotal": ["exact", "gte", "lte", "gt", "lt"],
-            "discount": ["exact", "gte", "lte", "gt", "lt"],
-            "total": ["exact", "gte", "lte", "gt", "lt"],
-            "balance": ["exact", "gte", "lte", "gt", "lt"],
-            "credit_applied": ["exact", "gte", "lte", "gt", "lt"],
-            "amount_due": ["exact", "gte", "lte", "gt", "lt"],
-            "created_at": ["exact", "date", "month", "year", "gte", "lte"],
-            "updated_at": ["exact", "date", "month", "year", "gte", "lte"],
-        }
+
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
@@ -108,13 +89,6 @@ class SaleItemType(DjangoObjectType):
     class Meta:
         model = SaleItem
         fields = ("id", "sale", "product", "quantity", "unit_price", "total_price")
-        filter_fields = {
-            "sale": ["exact"],
-            "product": ["exact"],
-            "quantity": ["exact", "gte", "lte", "gt", "lt"],
-            "unit_price": ["exact", "gte", "lte", "gt", "lt"],
-            "total_price": ["exact", "gte", "lte", "gt", "lt"],
-        }
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
@@ -130,21 +104,13 @@ class SaleItemType(DjangoObjectType):
 class PaymentType(DjangoObjectType):
     """GraphQL type for Payment model"""
 
-    # Override method to use enum
-    method = PaymentMethodEnum()
     # Override decimal field
     amount = graphene.Decimal()
 
     class Meta:
         model = Payment
         fields = ("id", "sale", "method", "amount", "created_at", "updated_at")
-        filter_fields = {
-            "sale": ["exact"],
-            "method": ["exact"],
-            "amount": ["exact", "gte", "lte", "gt", "lt"],
-            "created_at": ["exact", "date", "month", "year", "gte", "lte"],
-            "updated_at": ["exact", "date", "month", "year", "gte", "lte"],
-        }
+
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
@@ -160,8 +126,6 @@ class PaymentType(DjangoObjectType):
 class CustomerCreditType(DjangoObjectType):
     """GraphQL type for CustomerCredit model"""
 
-    # Override transaction_type to use enum
-    transaction_type = TransactionTypeEnum()
     # Override decimal fields
     amount = graphene.Decimal()
     balance_after = graphene.Decimal()
@@ -179,16 +143,7 @@ class CustomerCreditType(DjangoObjectType):
             "created_at",
             "updated_at",
         )
-        filter_fields = {
-            "customer": ["exact"],
-            "transaction_type": ["exact"],
-            "amount": ["exact", "gte", "lte", "gt", "lt"],
-            "balance_after": ["exact", "gte", "lte", "gt", "lt"],
-            "sale": ["exact"],
-            "description": ["icontains"],
-            "created_at": ["exact", "date", "month", "year", "gte", "lte"],
-            "updated_at": ["exact", "date", "month", "year", "gte", "lte"],
-        }
+
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 

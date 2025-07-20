@@ -18,6 +18,12 @@ from sales.schema.types.sale_types import (
     SaleStatsType,
     DailySalesType,
 )
+from sales.schema.filters import (
+    SaleFilter,
+    SaleItemFilter,
+    PaymentFilter,
+    CustomerCreditFilter,
+)
 from customers.schema.types.customer_type import ValueCountPair
 
 
@@ -27,18 +33,22 @@ class Query(graphene.ObjectType):
     # Connection fields with filtering and pagination
     sales = DjangoFilterConnectionField(
         SaleType,
+        filterset_class=SaleFilter,
         description="Get sales with filtering and pagination",
     )
     sale_items = DjangoFilterConnectionField(
         SaleItemType,
+        filterset_class=SaleItemFilter,
         description="Get sale items with filtering and pagination",
     )
     payments = DjangoFilterConnectionField(
         PaymentType,
+        filterset_class=PaymentFilter,
         description="Get payments with filtering and pagination",
     )
     customer_credits = DjangoFilterConnectionField(
         CustomerCreditType,
+        filterset_class=CustomerCreditFilter,
         description="Get customer credits with filtering and pagination",
     )
 
