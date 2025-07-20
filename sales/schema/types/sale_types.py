@@ -205,7 +205,7 @@ class CustomerCreditType(DjangoObjectType):
 
 
 class SaleStatsType(graphene.ObjectType):
-    """Statistics for sales"""
+    """Statistics for sales with filtering support"""
 
     total_sales = graphene.Decimal()
     total_transactions = graphene.Int()
@@ -225,6 +225,13 @@ class SaleStatsType(graphene.ObjectType):
     customer_debt_incurred = graphene.Decimal()
 
     total_discounts = graphene.Decimal()
+
+    # Meta information about the filtered data
+    date_range_from = graphene.Date()
+    date_range_to = graphene.Date()
+    filtered_by_customer = graphene.ID()
+    filtered_by_sale_type = graphene.String()
+    filtered_by_payment_method = graphene.String()
 
 
 class DailySalesType(graphene.ObjectType):

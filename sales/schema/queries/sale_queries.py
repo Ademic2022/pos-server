@@ -9,6 +9,7 @@ from django.db.models import Sum, Count, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
 from sales.models import Sale, Payment, CustomerCredit
+from sales.schema.enums.sale_enums import SaleTypeEnum, PaymentMethodEnum
 from sales.schema.types.sale_types import (
     SaleType,
     SaleItemType,
@@ -48,7 +49,31 @@ class Query(graphene.ObjectType):
 
     # Statistics and reports
     sales_stats = graphene.Field(
-        SaleStatsType, date_from=graphene.Date(), date_to=graphene.Date()
+        SaleStatsType,
+        # Date filters
+        date_from=graphene.Date(),
+        date_to=graphene.Date(),
+        created_at_date=graphene.Date(),
+        created_at_month=graphene.Int(),
+        created_at_year=graphene.Int(),
+        created_at_gte=graphene.DateTime(),
+        created_at_lte=graphene.DateTime(),
+        # Sale filters
+        customer=graphene.ID(),
+        sale_type=SaleTypeEnum(),
+        transaction_id=graphene.String(),
+        transaction_id_icontains=graphene.String(),
+        payment_method=PaymentMethodEnum(),
+        # Amount filters
+        total_gte=graphene.Decimal(),
+        total_lte=graphene.Decimal(),
+        total_gt=graphene.Decimal(),
+        total_lt=graphene.Decimal(),
+        subtotal_gte=graphene.Decimal(),
+        subtotal_lte=graphene.Decimal(),
+        amount_due_gt=graphene.Decimal(),
+        amount_due_gte=graphene.Decimal(),
+        description="Get sales statistics with comprehensive filtering options",
     )
     daily_sales = graphene.List(
         DailySalesType, date_from=graphene.Date(), date_to=graphene.Date()
@@ -75,16 +100,81 @@ class Query(graphene.ObjectType):
 
         return latest_credit.balance_after if latest_credit else 0
 
-    def resolve_sales_stats(self, info, date_from=None, date_to=None):
-        """Get sales statistics"""
+    def resolve_sales_stats(self, info, **kwargs):
+        """Get sales statistics with comprehensive filtering"""
         queryset = Sale.objects.all()
 
+        # Extract filter parameters
+        date_from = kwargs.get("date_from")
+        date_to = kwargs.get("date_to")
+        created_at_date = kwargs.get("created_at_date")
+        created_at_month = kwargs.get("created_at_month")
+        created_at_year = kwargs.get("created_at_year")
+        created_at_gte = kwargs.get("created_at_gte")
+        created_at_lte = kwargs.get("created_at_lte")
+        customer = kwargs.get("customer")
+        sale_type = kwargs.get("sale_type")
+        transaction_id = kwargs.get("transaction_id")
+        transaction_id_icontains = kwargs.get("transaction_id_icontains")
+        payment_method = kwargs.get("payment_method")
+        total_gte = kwargs.get("total_gte")
+        total_lte = kwargs.get("total_lte")
+        total_gt = kwargs.get("total_gt")
+        total_lt = kwargs.get("total_lt")
+        subtotal_gte = kwargs.get("subtotal_gte")
+        subtotal_lte = kwargs.get("subtotal_lte")
+        amount_due_gt = kwargs.get("amount_due_gt")
+        amount_due_gte = kwargs.get("amount_due_gte")
+
+        # Apply date filters
         if date_from:
             queryset = queryset.filter(created_at__date__gte=date_from)
-
         if date_to:
             queryset = queryset.filter(created_at__date__lte=date_to)
+        if created_at_date:
+            queryset = queryset.filter(created_at__date=created_at_date)
+        if created_at_month:
+            queryset = queryset.filter(created_at__month=created_at_month)
+        if created_at_year:
+            queryset = queryset.filter(created_at__year=created_at_year)
+        if created_at_gte:
+            queryset = queryset.filter(created_at__gte=created_at_gte)
+        if created_at_lte:
+            queryset = queryset.filter(created_at__lte=created_at_lte)
 
+        # Apply sale filters
+        if customer:
+            queryset = queryset.filter(customer_id=customer)
+        if sale_type:
+            queryset = queryset.filter(sale_type=sale_type)
+        if transaction_id:
+            queryset = queryset.filter(transaction_id=transaction_id)
+        if transaction_id_icontains:
+            queryset = queryset.filter(
+                transaction_id__icontains=transaction_id_icontains
+            )
+        if payment_method:
+            queryset = queryset.filter(payments__method=payment_method)
+            
+        # Apply amount filters
+        if total_gte is not None:
+            queryset = queryset.filter(total__gte=total_gte)
+        if total_lte is not None:
+            queryset = queryset.filter(total__lte=total_lte)
+        if total_gt is not None:
+            queryset = queryset.filter(total__gt=total_gt)
+        if total_lt is not None:
+            queryset = queryset.filter(total__lt=total_lt)
+        if subtotal_gte is not None:
+            queryset = queryset.filter(subtotal__gte=subtotal_gte)
+        if subtotal_lte is not None:
+            queryset = queryset.filter(subtotal__lte=subtotal_lte)
+        if amount_due_gt is not None:
+            queryset = queryset.filter(amount_due__gt=amount_due_gt)
+        if amount_due_gte is not None:
+            queryset = queryset.filter(amount_due__gte=amount_due_gte)
+
+        # Calculate statistics
         stats = queryset.aggregate(
             total_sales=Sum("total"),
             total_transactions=Count("id"),
@@ -134,6 +224,11 @@ class Query(graphene.ObjectType):
             customer_debt_incurred=customer_credit_stats["customer_debt_incurred"]
             or Decimal("0.00"),
             total_discounts=stats["total_discounts"] or Decimal("0.00"),
+            # Meta information
+            date_range_from=date_from,
+            date_range_to=date_to,
+            filtered_by_customer=customer,
+            filtered_by_sale_type=sale_type,
         )
 
     def resolve_daily_sales(self, info, date_from=None, date_to=None):
