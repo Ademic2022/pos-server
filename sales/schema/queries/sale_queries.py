@@ -24,7 +24,7 @@ from sales.schema.filters import (
     PaymentFilter,
     CustomerCreditFilter,
 )
-from customers.schema.types.customer_type import ValueCountPair
+from shared.types import ValueCountPair
 
 
 class Query(graphene.ObjectType):

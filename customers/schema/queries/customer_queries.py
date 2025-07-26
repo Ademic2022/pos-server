@@ -7,8 +7,8 @@ from customers.models import Customer
 from customers.schema.types.customer_type import (
     CustomerType,
     CustomerStatsType,
-    ValueCountPair,
 )
+from shared.types import ValueCountPair
 
 
 class Query(graphene.ObjectType):
@@ -27,7 +27,7 @@ class Query(graphene.ObjectType):
     def resolve_customer(self, info, id):
         """Get a single customer by ID"""
         try:
-            return Customer.objects.get(id=id)
+            return Customer.objects.select_related().get(id=id)
         except Customer.DoesNotExist:
             return None
 

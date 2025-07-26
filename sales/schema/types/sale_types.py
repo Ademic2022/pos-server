@@ -4,7 +4,7 @@ GraphQL types for Sales models
 
 import graphene
 from graphene_django import DjangoObjectType
-from customers.schema.types.customer_type import ValueCountPair
+from shared.types import ValueCountPair
 from sales.models import Sale, SaleItem, Payment, CustomerCredit
 from sales.schema.enums.sale_enums import (
     SaleTypeEnum,
@@ -96,7 +96,7 @@ class SaleItemType(DjangoObjectType):
     class Meta:
         model = SaleItem
         fields = ("id", "sale", "product", "quantity", "unit_price", "total_price")
-        
+
         interfaces = (graphene.relay.Node,)
 
     def resolve_unit_price(self, info):
@@ -119,7 +119,7 @@ class PaymentType(DjangoObjectType):
     class Meta:
         model = Payment
         fields = ("id", "sale", "method", "amount", "created_at", "updated_at")
-        
+
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
@@ -154,7 +154,7 @@ class CustomerCreditType(DjangoObjectType):
             "created_at",
             "updated_at",
         )
-        
+
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
