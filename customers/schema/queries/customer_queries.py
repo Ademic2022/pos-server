@@ -32,11 +32,6 @@ class Query(graphene.ObjectType):
             return None
 
     @login_required
-    def resolve_customers(self, info, **kwargs):
-        """Get multiple customers with filtering and pagination"""
-        return Customer.objects.select_related().all()
-
-    @login_required
     def resolve_customer_stats(self, info):
         """Get customer statistics"""
         stats = Customer.objects.aggregate(
