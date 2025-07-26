@@ -197,6 +197,13 @@ class CreateSale(graphene.Mutation):
                     customer.balance = current_customer_balance
                     customer.save()
 
+                # Update customer's total_purchases and last_purchase
+                customer.total_purchases += sale.total
+                customer.last_purchase = sale.created_at
+                customer.save(
+                    update_fields=["total_purchases", "last_purchase", "updated_at"]
+                )
+
             # Update sale with final calculated values
             sale.credit_applied = credit_applied
             amount_after_credit_and_payments = (
