@@ -230,7 +230,7 @@ class Query(graphene.ObjectType):
         return SaleStatsType(
             total_sales=stats["total_sales"] or Decimal("0.00"),
             total_transactions=stats["total_transactions"] or 0,
-            average_sale_value=stats["average_sale_value"] or Decimal("0.00"),
+            average_sale_value=round(stats["average_sale_value"] or Decimal("0.00"), 2),
             retail_sales=stats["retail_sales"] or Decimal("0.00"),
             wholesale_sales=stats["wholesale_sales"] or Decimal("0.00"),
             cash_sales=payment_stats["cash_sales"] or Decimal("0.00"),

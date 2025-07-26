@@ -32,7 +32,7 @@ class PaymentInline(admin.TabularInline):
     model = Payment
     extra = 0
     readonly_fields = ("amount_display", "created_at")
-    fields = ("method", "amount", "amount_display", "created_at")
+    fields = ("method", "amount", "balance", "amount_display", "created_at")
 
     def amount_display(self, obj):
         """Display payment amount with formatting"""

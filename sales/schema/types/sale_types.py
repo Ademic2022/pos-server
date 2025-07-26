@@ -118,7 +118,15 @@ class PaymentType(DjangoObjectType):
 
     class Meta:
         model = Payment
-        fields = ("id", "sale", "method", "amount", "created_at", "updated_at")
+        fields = (
+            "id",
+            "sale",
+            "method",
+            "amount",
+            "balance",
+            "created_at",
+            "updated_at",
+        )
 
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
