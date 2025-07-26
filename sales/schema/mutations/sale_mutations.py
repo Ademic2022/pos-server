@@ -107,15 +107,15 @@ class CreateSale(graphene.Mutation):
             sale.total = subtotal - sale.discount
             sale.save()
 
-            # Add payments and calculate total payments
+            # Add payment and calculate total payments
             total_payments = Decimal("0.00")
-            for payment_input in input.payments:
-                Payment.objects.create(
-                    sale=sale,
-                    method=str(payment_input.method.value),  # Convert enum to string
-                    amount=payment_input.amount,
-                )
-                total_payments += payment_input.amount
+            Payment.objects.create(
+                sale=sale,
+                method=str(input.payment.method.value),  # Convert enum to string
+                amount=input.payment.amount,
+                balance=input.payment.balance,
+            )
+            total_payments = input.payment.amount
 
             # AUTOMATIC CREDIT HANDLING LOGIC
             credit_applied = Decimal("0.00")
@@ -342,7 +342,10 @@ class AddPayment(graphene.Mutation):
 
             # Create payment
             payment = Payment.objects.create(
-                sale=sale, method=input.method, amount=input.amount
+                sale=sale,
+                method=input.method,
+                amount=input.amount,
+                balance=input.balance,
             )
 
             # Update sale balance

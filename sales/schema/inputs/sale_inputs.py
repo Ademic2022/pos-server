@@ -24,6 +24,7 @@ class PaymentInput(graphene.InputObjectType):
 
     method = PaymentMethodEnum(required=True)
     amount = graphene.Decimal(required=True)
+    balance = graphene.Decimal(required=True)
 
 
 class CreateSaleInput(graphene.InputObjectType):
@@ -32,7 +33,7 @@ class CreateSaleInput(graphene.InputObjectType):
     customer_id = graphene.ID(required=True)
     sale_type = SaleTypeEnum(required=True, default_value=SaleTypeEnum.RETAIL)
     items = graphene.List(SaleItemInput, required=True)
-    payments = graphene.List(PaymentInput, required=True)
+    payment = PaymentInput(required=True)
     discount = graphene.Decimal(default_value=Decimal("0.00"))
     credit_applied = graphene.Decimal(default_value=Decimal("0.00"))
 
