@@ -9,7 +9,12 @@ from django.db import transaction
 from sales.models import Sale, SaleItem, Payment, CustomerCredit, Return, ReturnItem
 from customers.models import Customer
 from products.models import Product
-from sales.schema.types.sale_types import ReturnType, SaleType, PaymentType, CustomerCreditType
+from sales.schema.types.sale_types import (
+    ReturnType,
+    SaleType,
+    PaymentType,
+    CustomerCreditType,
+)
 from sales.schema.inputs.sale_inputs import (
     ApproveReturnInput,
     CreateReturnInput,

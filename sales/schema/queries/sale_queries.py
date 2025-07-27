@@ -141,6 +141,7 @@ class Query(graphene.ObjectType):
 
     def resolve_sales_stats(self, info, **kwargs):
         """Get sales statistics with comprehensive filtering"""
+        from customers.models import Customer
         queryset = Sale.objects.all()
 
         # Extract filter parameters
@@ -231,10 +232,30 @@ class Query(graphene.ObjectType):
             part_payment_sales=Sum("amount", filter=Q(method="part_payment")),
         )
 
-        # Get customer credit statistics
-        customer_credit_stats = CustomerCredit.objects.filter(
-            sale__in=queryset
-        ).aggregate(
+        # Get customer credit statistics for the filtered date range
+        credit_queryset = CustomerCredit.objects.all()
+
+        # Apply the same date filters to customer credit transactions
+        if date_from:
+            credit_queryset = credit_queryset.filter(created_at__date__gte=date_from)
+        if date_to:
+            credit_queryset = credit_queryset.filter(created_at__date__lte=date_to)
+        if created_at_date:
+            credit_queryset = credit_queryset.filter(created_at__date=created_at_date)
+        if created_at_month:
+            credit_queryset = credit_queryset.filter(created_at__month=created_at_month)
+        if created_at_year:
+            credit_queryset = credit_queryset.filter(created_at__year=created_at_year)
+        if created_at_gte:
+            credit_queryset = credit_queryset.filter(created_at__gte=created_at_gte)
+        if created_at_lte:
+            credit_queryset = credit_queryset.filter(created_at__lte=created_at_lte)
+
+        # Filter by customer if specified
+        if customer:
+            credit_queryset = credit_queryset.filter(customer_id=customer)
+
+        customer_credit_stats = credit_queryset.aggregate(
             customer_credit_applied_sum=Sum(
                 "amount", filter=Q(transaction_type="credit_used")
             ),
@@ -247,12 +268,12 @@ class Query(graphene.ObjectType):
             customer_credit_earned_count=Count(
                 "id", filter=Q(transaction_type="credit_earned")
             ),
-            customer_debt_incurred_sum=Sum(
-                "amount", filter=Q(transaction_type="debt_incurred")
-            ),
-            customer_debt_incurred_count=Count(
-                "id", filter=Q(transaction_type="debt_incurred")
-            ),
+        )
+
+
+        debt_stats = Customer.objects.aggregate(
+            total_debt_amount=Sum("balance", filter=Q(balance__lt=0)),
+            total_debt_count=Count("balance", filter=Q(balance__lt=0)),
         )
 
         return SaleStatsType(
@@ -276,9 +297,12 @@ class Query(graphene.ObjectType):
                 count=customer_credit_stats["customer_credit_earned_count"] or 0,
             ),
             customer_debt_incurred=ValueCountPair(
-                value=customer_credit_stats["customer_debt_incurred_sum"]
-                or Decimal("0.00"),
-                count=customer_credit_stats["customer_debt_incurred_count"] or 0,
+                value=(
+                    abs(debt_stats["total_debt_amount"])
+                    if debt_stats["total_debt_amount"]
+                    else Decimal("0.00")
+                ),
+                count=debt_stats["total_debt_count"] or 0,
             ),
             total_discounts=stats["total_discounts"] or Decimal("0.00"),
             # Meta information
