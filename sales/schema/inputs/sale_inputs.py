@@ -63,3 +63,33 @@ class CustomerCreditInput(graphene.InputObjectType):
     amount = graphene.Decimal(required=True)
     description = graphene.String()
     sale_id = graphene.ID()
+
+
+class ReturnItemInput(graphene.InputObjectType):
+    """Input type for return items"""
+
+    sale_item_id = graphene.ID(required=True)
+    quantity = graphene.Int(required=True)
+    refund_amount = graphene.Decimal(required=True)
+
+
+class CreateReturnInput(graphene.InputObjectType):
+    """Input type for creating a return request"""
+
+    sale_id = graphene.ID(required=True)
+    reason = graphene.String(required=True)
+    items = graphene.List(ReturnItemInput, required=True)
+
+
+class ApproveReturnInput(graphene.InputObjectType):
+    """Input type for approving a return"""
+
+    return_id = graphene.ID(required=True)
+    approval_notes = graphene.String()
+
+
+class RejectReturnInput(graphene.InputObjectType):
+    """Input type for rejecting a return"""
+
+    return_id = graphene.ID(required=True)
+    rejection_notes = graphene.String(required=True)

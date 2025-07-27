@@ -19,3 +19,10 @@ class TransactionTypeChoices(models.TextChoices):
     CREDIT_REFUND = "credit_refund", "Credit Refund"
     CREDIT_EARNED = "credit_earned", "Credit Earned (Overpayment)"
     DEBT_INCURRED = "debt_incurred", "Debt Incurred (Underpayment)"
+
+
+class ReturnStatusChoices(models.TextChoices):
+    PENDING = "pending", "Pending Approval"
+    APPROVED = "approved", "Approved"
+    REJECTED = "rejected", "Rejected"
+    COMPLETED = "completed", "Completed"

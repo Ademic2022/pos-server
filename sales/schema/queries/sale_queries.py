@@ -11,6 +11,7 @@ from datetime import timedelta
 from sales.models import Sale, Payment, CustomerCredit
 from sales.schema.enums.sale_enums import SaleTypeEnum, PaymentMethodEnum
 from sales.schema.types.sale_types import (
+    ReturnType,
     SaleType,
     SaleItemType,
     PaymentType,
@@ -18,6 +19,7 @@ from sales.schema.types.sale_types import (
     SaleStatsType,
     DailySalesType,
 )
+from sales.models import Return
 from sales.schema.filters import (
     SaleFilter,
     SaleItemFilter,
@@ -93,6 +95,32 @@ class Query(graphene.ObjectType):
     # Recent activities (non-paginated for dashboard widgets)
     recent_sales = graphene.List(SaleType, limit=graphene.Int(default_value=10))
     pending_payments = graphene.List(SaleType)
+
+    # Return queries
+    return_request = graphene.Field(
+        ReturnType,
+        id=graphene.ID(required=True),
+        description="Get a single return request by ID",
+    )
+    returns = graphene.List(
+        ReturnType,
+        customer_id=graphene.ID(),
+        status=graphene.String(),
+        sale_id=graphene.ID(),
+        limit=graphene.Int(default_value=50),
+        description="Get returns with optional filtering",
+    )
+    pending_returns = graphene.List(
+        ReturnType,
+        limit=graphene.Int(default_value=20),
+        description="Get pending returns for approval",
+    )
+    customer_returns = graphene.List(
+        ReturnType,
+        customer_id=graphene.ID(required=True),
+        limit=graphene.Int(default_value=20),
+        description="Get returns for a specific customer",
+    )
 
     def resolve_sale(self, info, id):
         """Get a single sale by ID"""
@@ -349,3 +377,38 @@ class Query(graphene.ObjectType):
     def resolve_pending_payments(self, info):
         """Get sales with pending payments (amount_due > 0)"""
         return Sale.objects.filter(amount_due__gt=0).order_by("-created_at")
+
+    # Return resolvers
+    def resolve_return_request(self, info, id):
+        """Get a single return request by ID"""
+        try:
+            return Return.objects.get(id=id)
+        except Return.DoesNotExist:
+            return None
+
+    def resolve_returns(
+        self, info, customer_id=None, status=None, sale_id=None, limit=50
+    ):
+        """Get returns with optional filtering"""
+        queryset = Return.objects.all()
+
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
+
+        if status:
+            queryset = queryset.filter(status=status)
+
+        if sale_id:
+            queryset = queryset.filter(original_sale_id=sale_id)
+
+        return queryset.order_by("-created_at")[:limit]
+
+    def resolve_pending_returns(self, info, limit=20):
+        """Get pending returns for approval"""
+        return Return.objects.filter(status="pending").order_by("-created_at")[:limit]
+
+    def resolve_customer_returns(self, info, customer_id, limit=20):
+        """Get returns for a specific customer"""
+        return Return.objects.filter(customer_id=customer_id).order_by("-created_at")[
+            :limit
+        ]

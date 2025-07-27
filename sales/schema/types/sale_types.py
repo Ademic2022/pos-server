@@ -5,7 +5,7 @@ GraphQL types for Sales models
 import graphene
 from graphene_django import DjangoObjectType
 from shared.types import ValueCountPair
-from sales.models import Sale, SaleItem, Payment, CustomerCredit
+from sales.models import Return, ReturnItem, Sale, SaleItem, Payment, CustomerCredit
 from sales.schema.enums.sale_enums import (
     SaleTypeEnum,
     PaymentMethodEnum,
@@ -228,3 +228,32 @@ class DailySalesType(graphene.ObjectType):
     customer_credit_applied = graphene.Decimal()
     customer_credit_earned = graphene.Decimal()
     customer_debt_incurred = graphene.Decimal()
+
+
+class ReturnType(DjangoObjectType):
+    """Return GraphQL type"""
+
+    class Meta:
+        model = Return
+        fields = "__all__"
+
+    # Custom resolvers for better data formatting
+    def resolve_total_refund_amount(self, info):
+        return self.total_refund_amount if self.total_refund_amount is not None else 0
+
+    def resolve_items(self, info):
+        return self.items.all()
+
+
+class ReturnItemType(DjangoObjectType):
+    """Return Item GraphQL type"""
+
+    class Meta:
+        model = ReturnItem
+        fields = "__all__"
+
+    def resolve_refund_amount(self, info):
+        return self.refund_amount if self.refund_amount is not None else 0
+
+    def resolve_unit_price(self, info):
+        return self.unit_price if self.unit_price is not None else 0
