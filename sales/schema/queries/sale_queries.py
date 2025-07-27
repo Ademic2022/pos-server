@@ -142,6 +142,7 @@ class Query(graphene.ObjectType):
     def resolve_sales_stats(self, info, **kwargs):
         """Get sales statistics with comprehensive filtering"""
         from customers.models import Customer
+
         queryset = Sale.objects.all()
 
         # Extract filter parameters
@@ -270,8 +271,14 @@ class Query(graphene.ObjectType):
             ),
         )
 
+        # Get current debt from Customer model's balance field (negative balances = debt)
+        debt_queryset = Customer.objects.all()
 
-        debt_stats = Customer.objects.aggregate(
+        # Filter by customer if specified
+        if customer:
+            debt_queryset = debt_queryset.filter(id=customer)
+
+        debt_stats = debt_queryset.aggregate(
             total_debt_amount=Sum("balance", filter=Q(balance__lt=0)),
             total_debt_count=Count("balance", filter=Q(balance__lt=0)),
         )
