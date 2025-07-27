@@ -137,10 +137,8 @@ class Return(models.Model):
     )
 
     # Who approved/rejected the return
-    approved_by = models.ForeignKey(
-        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True
-    )
-    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, **NULL)
+    approved_at = models.DateTimeField(**NULL)
     approval_notes = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
