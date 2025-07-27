@@ -72,7 +72,7 @@ class Customer(models.Model):
 
     class Meta:
         db_table = "customers"
-        ordering = ["-created_at"]
+        ordering = ["-last_purchase"]
 
     def __str__(self):
         return f"{self.name} ({self.type})"

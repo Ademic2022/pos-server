@@ -6,12 +6,20 @@ import traceback
 import graphene
 from decimal import Decimal
 from django.db import transaction
-from sales.models import Sale, SaleItem, Payment, CustomerCredit
+from sales.models import Sale, SaleItem, Payment, CustomerCredit, Return, ReturnItem
 from customers.models import Customer
 from products.models import Product
-from sales.schema.types.sale_types import SaleType, PaymentType, CustomerCreditType
+from sales.schema.types.sale_types import (
+    ReturnType,
+    SaleType,
+    PaymentType,
+    CustomerCreditType,
+)
 from sales.schema.inputs.sale_inputs import (
+    ApproveReturnInput,
+    CreateReturnInput,
     CreateSaleInput,
+    RejectReturnInput,
     UpdateSaleInput,
     AddPaymentInput,
     CustomerCreditInput,
@@ -107,15 +115,15 @@ class CreateSale(graphene.Mutation):
             sale.total = subtotal - sale.discount
             sale.save()
 
-            # Add payments and calculate total payments
+            # Add payment and calculate total payments
             total_payments = Decimal("0.00")
-            for payment_input in input.payments:
-                Payment.objects.create(
-                    sale=sale,
-                    method=str(payment_input.method.value),  # Convert enum to string
-                    amount=payment_input.amount,
-                )
-                total_payments += payment_input.amount
+            Payment.objects.create(
+                sale=sale,
+                method=str(input.payment.method.value),  # Convert enum to string
+                amount=input.payment.amount,
+                balance=input.payment.balance,
+            )
+            total_payments = input.payment.amount
 
             # AUTOMATIC CREDIT HANDLING LOGIC
             credit_applied = Decimal("0.00")
@@ -196,6 +204,13 @@ class CreateSale(graphene.Mutation):
                     # Update customer balance
                     customer.balance = current_customer_balance
                     customer.save()
+
+                # Update customer's total_purchases and last_purchase
+                customer.total_purchases += sale.total
+                customer.last_purchase = sale.created_at
+                customer.save(
+                    update_fields=["total_purchases", "last_purchase", "updated_at"]
+                )
 
             # Update sale with final calculated values
             sale.credit_applied = credit_applied
@@ -335,7 +350,10 @@ class AddPayment(graphene.Mutation):
 
             # Create payment
             payment = Payment.objects.create(
-                sale=sale, method=input.method, amount=input.amount
+                sale=sale,
+                method=input.method,
+                amount=input.amount,
+                balance=input.balance,
             )
 
             # Update sale balance
@@ -436,6 +454,213 @@ class AddCustomerCredit(graphene.Mutation):
             )
 
 
+class CreateReturn(graphene.Mutation):
+    """Create a new return request"""
+
+    class Arguments:
+        input = CreateReturnInput(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+    return_request = graphene.Field(ReturnType)
+    errors = graphene.List(graphene.String)
+
+    @transaction.atomic
+    def mutate(self, info, input):
+        try:
+            # Get the original sale
+            try:
+                sale = Sale.objects.get(id=input.sale_id)
+            except Sale.DoesNotExist:
+                return CreateReturn(
+                    success=False,
+                    message="Sale not found",
+                    errors=["Sale not found"],
+                )
+
+            # Get customer from sale
+            customer = sale.customer
+            if not customer:
+                return CreateReturn(
+                    success=False,
+                    message="Cannot create return for sale without customer",
+                    errors=["Sale must have a customer for returns"],
+                )
+
+            # Create the return request
+            return_request = Return.objects.create(
+                original_sale=sale,
+                customer=customer,
+                reason=input.reason,
+            )
+
+            # Add return items and calculate total refund
+            total_refund = Decimal("0.00")
+            for item_input in input.items:
+                try:
+                    sale_item = SaleItem.objects.get(
+                        id=item_input.sale_item_id, sale=sale
+                    )
+
+                    # Validate quantity
+                    if item_input.quantity > sale_item.quantity:
+                        raise ValueError(
+                            f"Return quantity ({item_input.quantity}) cannot exceed "
+                            f"original quantity ({sale_item.quantity}) for {sale_item.product.name}"
+                        )
+
+                    # Create return item
+                    return_item = ReturnItem.objects.create(
+                        return_request=return_request,
+                        original_sale_item=sale_item,
+                        product=sale_item.product,
+                        quantity=item_input.quantity,
+                        unit_price=sale_item.unit_price,
+                        refund_amount=item_input.refund_amount,
+                    )
+
+                    total_refund += item_input.refund_amount
+
+                except SaleItem.DoesNotExist:
+                    raise ValueError(f"Sale item not found: {item_input.sale_item_id}")
+
+            # Update total refund amount
+            return_request.total_refund_amount = total_refund
+            return_request.save()
+
+            return CreateReturn(
+                success=True,
+                message=f"Return request {return_request.return_id} created successfully",
+                return_request=return_request,
+            )
+
+        except Exception as e:
+            traceback.print_exc()
+            return CreateReturn(
+                success=False,
+                message=f"Failed to create return: {str(e)}",
+                errors=[str(e)],
+            )
+
+
+class ApproveReturn(graphene.Mutation):
+    """Approve a return request and update stock"""
+
+    class Arguments:
+        input = ApproveReturnInput(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+    return_request = graphene.Field(ReturnType)
+    errors = graphene.List(graphene.String)
+
+    @transaction.atomic
+    def mutate(self, info, input):
+        try:
+            # Get the return request
+            try:
+                return_request = Return.objects.get(id=input.return_id)
+            except Return.DoesNotExist:
+                return ApproveReturn(
+                    success=False,
+                    message="Return request not found",
+                    errors=["Return request not found"],
+                )
+
+            # Get current user (you may need to adjust this based on your auth setup)
+            user = info.context.user if hasattr(info.context, "user") else None
+            if not user or not user.is_authenticated:
+                return ApproveReturn(
+                    success=False,
+                    message="Authentication required",
+                    errors=["Must be authenticated to approve returns"],
+                )
+
+            # Approve the return (this will update stock automatically)
+            return_request.approve_return(
+                approved_by_user=user, notes=input.approval_notes or ""
+            )
+
+            return ApproveReturn(
+                success=True,
+                message=f"Return {return_request.return_id} approved and completed successfully",
+                return_request=return_request,
+            )
+
+        except ValueError as e:
+            return ApproveReturn(
+                success=False,
+                message=str(e),
+                errors=[str(e)],
+            )
+        except Exception as e:
+            traceback.print_exc()
+            return ApproveReturn(
+                success=False,
+                message=f"Failed to approve return: {str(e)}",
+                errors=[str(e)],
+            )
+
+
+class RejectReturn(graphene.Mutation):
+    """Reject a return request"""
+
+    class Arguments:
+        input = RejectReturnInput(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+    return_request = graphene.Field(ReturnType)
+    errors = graphene.List(graphene.String)
+
+    @transaction.atomic
+    def mutate(self, info, input):
+        try:
+            # Get the return request
+            try:
+                return_request = Return.objects.get(id=input.return_id)
+            except Return.DoesNotExist:
+                return RejectReturn(
+                    success=False,
+                    message="Return request not found",
+                    errors=["Return request not found"],
+                )
+
+            # Get current user
+            user = info.context.user if hasattr(info.context, "user") else None
+            if not user or not user.is_authenticated:
+                return RejectReturn(
+                    success=False,
+                    message="Authentication required",
+                    errors=["Must be authenticated to reject returns"],
+                )
+
+            # Reject the return
+            return_request.reject_return(
+                rejected_by_user=user, notes=input.rejection_notes
+            )
+
+            return RejectReturn(
+                success=True,
+                message=f"Return {return_request.return_id} rejected successfully",
+                return_request=return_request,
+            )
+
+        except ValueError as e:
+            return RejectReturn(
+                success=False,
+                message=str(e),
+                errors=[str(e)],
+            )
+        except Exception as e:
+            traceback.print_exc()
+            return RejectReturn(
+                success=False,
+                message=f"Failed to reject return: {str(e)}",
+                errors=[str(e)],
+            )
+
+
 class Mutation(graphene.ObjectType):
     """Sales mutations"""
 
@@ -443,3 +668,8 @@ class Mutation(graphene.ObjectType):
     update_sale = UpdateSale.Field()
     add_payment = AddPayment.Field()
     add_customer_credit = AddCustomerCredit.Field()
+
+    # Return mutations
+    create_return = CreateReturn.Field()
+    approve_return = ApproveReturn.Field()
+    reject_return = RejectReturn.Field()

@@ -4,7 +4,8 @@ GraphQL types for Sales models
 
 import graphene
 from graphene_django import DjangoObjectType
-from sales.models import Sale, SaleItem, Payment, CustomerCredit
+from shared.types import ValueCountPair
+from sales.models import Return, ReturnItem, Sale, SaleItem, Payment, CustomerCredit
 from sales.schema.enums.sale_enums import (
     SaleTypeEnum,
     PaymentMethodEnum,
@@ -41,19 +42,7 @@ class SaleType(DjangoObjectType):
             "created_at",
             "updated_at",
         )
-        filter_fields = {
-            "customer": ["exact"],
-            "sale_type": ["exact"],
-            "transaction_id": ["exact", "icontains"],
-            "subtotal": ["exact", "gte", "lte", "gt", "lt"],
-            "discount": ["exact", "gte", "lte", "gt", "lt"],
-            "total": ["exact", "gte", "lte", "gt", "lt"],
-            "balance": ["exact", "gte", "lte", "gt", "lt"],
-            "credit_applied": ["exact", "gte", "lte", "gt", "lt"],
-            "amount_due": ["exact", "gte", "lte", "gt", "lt"],
-            "created_at": ["exact", "date", "month", "year", "gte", "lte"],
-            "updated_at": ["exact", "date", "month", "year", "gte", "lte"],
-        }
+
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
@@ -107,14 +96,7 @@ class SaleItemType(DjangoObjectType):
     class Meta:
         model = SaleItem
         fields = ("id", "sale", "product", "quantity", "unit_price", "total_price")
-        filter_fields = {
-            "sale": ["exact"],
-            "product": ["exact"],
-            "quantity": ["exact", "gte", "lte", "gt", "lt"],
-            "unit_price": ["exact", "gte", "lte", "gt", "lt"],
-            "total_price": ["exact", "gte", "lte", "gt", "lt"],
-        }
-        # Enable relay-style connections
+
         interfaces = (graphene.relay.Node,)
 
     def resolve_unit_price(self, info):
@@ -136,14 +118,16 @@ class PaymentType(DjangoObjectType):
 
     class Meta:
         model = Payment
-        fields = ("id", "sale", "method", "amount", "created_at", "updated_at")
-        filter_fields = {
-            "sale": ["exact"],
-            "method": ["exact"],
-            "amount": ["exact", "gte", "lte", "gt", "lt"],
-            "created_at": ["exact", "date", "month", "year", "gte", "lte"],
-            "updated_at": ["exact", "date", "month", "year", "gte", "lte"],
-        }
+        fields = (
+            "id",
+            "sale",
+            "method",
+            "amount",
+            "balance",
+            "created_at",
+            "updated_at",
+        )
+
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
@@ -178,16 +162,7 @@ class CustomerCreditType(DjangoObjectType):
             "created_at",
             "updated_at",
         )
-        filter_fields = {
-            "customer": ["exact"],
-            "transaction_type": ["exact"],
-            "amount": ["exact", "gte", "lte", "gt", "lt"],
-            "balance_after": ["exact", "gte", "lte", "gt", "lt"],
-            "sale": ["exact"],
-            "description": ["icontains"],
-            "created_at": ["exact", "date", "month", "year", "gte", "lte"],
-            "updated_at": ["exact", "date", "month", "year", "gte", "lte"],
-        }
+
         # Enable relay-style connections
         interfaces = (graphene.relay.Node,)
 
@@ -205,7 +180,7 @@ class CustomerCreditType(DjangoObjectType):
 
 
 class SaleStatsType(graphene.ObjectType):
-    """Statistics for sales"""
+    """Statistics for sales with filtering support"""
 
     total_sales = graphene.Decimal()
     total_transactions = graphene.Int()
@@ -220,11 +195,18 @@ class SaleStatsType(graphene.ObjectType):
     part_payment_sales = graphene.Decimal()
 
     # Customer credit statistics
-    customer_credit_applied = graphene.Decimal()
-    customer_credit_earned = graphene.Decimal()
-    customer_debt_incurred = graphene.Decimal()
+    customer_credit_applied = graphene.Field(ValueCountPair)
+    customer_credit_earned = graphene.Field(ValueCountPair)
+    customer_debt_incurred = graphene.Field(ValueCountPair)
 
     total_discounts = graphene.Decimal()
+
+    # Meta information about the filtered data
+    date_range_from = graphene.Date()
+    date_range_to = graphene.Date()
+    filtered_by_customer = graphene.ID()
+    filtered_by_sale_type = graphene.String()
+    filtered_by_payment_method = graphene.String()
 
 
 class DailySalesType(graphene.ObjectType):
@@ -246,3 +228,32 @@ class DailySalesType(graphene.ObjectType):
     customer_credit_applied = graphene.Decimal()
     customer_credit_earned = graphene.Decimal()
     customer_debt_incurred = graphene.Decimal()
+
+
+class ReturnType(DjangoObjectType):
+    """Return GraphQL type"""
+
+    class Meta:
+        model = Return
+        fields = "__all__"
+
+    # Custom resolvers for better data formatting
+    def resolve_total_refund_amount(self, info):
+        return self.total_refund_amount if self.total_refund_amount is not None else 0
+
+    def resolve_items(self, info):
+        return self.items.all()
+
+
+class ReturnItemType(DjangoObjectType):
+    """Return Item GraphQL type"""
+
+    class Meta:
+        model = ReturnItem
+        fields = "__all__"
+
+    def resolve_refund_amount(self, info):
+        return self.refund_amount if self.refund_amount is not None else 0
+
+    def resolve_unit_price(self, info):
+        return self.unit_price if self.unit_price is not None else 0

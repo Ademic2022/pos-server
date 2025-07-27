@@ -3,7 +3,12 @@ GraphQL enums for Sales models
 """
 
 import graphene
-from sales.choices import SaleTypeChoices, PaymentMethodChoices, TransactionTypeChoices
+from sales.choices import (
+    SaleTypeChoices,
+    PaymentMethodChoices,
+    TransactionTypeChoices,
+    ReturnStatusChoices,
+)
 
 
 class SaleTypeEnum(graphene.Enum):
@@ -25,3 +30,10 @@ class TransactionTypeEnum(graphene.Enum):
 
     class Meta:
         enum = TransactionTypeChoices
+
+
+class ReturnStatusEnum(graphene.Enum):
+    """GraphQL enum for return status"""
+
+    class Meta:
+        enum = ReturnStatusChoices

@@ -3,6 +3,8 @@ from decimal import Decimal
 from graphene_django import DjangoObjectType
 from customers.models import Customer
 from customers.schema.enums.customer_enums import CustomerTypeEnum, CustomerStatusEnum
+from sales.schema.types.sale_types import PaymentType
+from shared.types import ValueCountPair
 
 
 class CustomerType(DjangoObjectType):
@@ -16,6 +18,7 @@ class CustomerType(DjangoObjectType):
     balance = graphene.Decimal()
     credit_limit = graphene.Decimal()
     total_purchases = graphene.Decimal()
+    transactions = graphene.List(lambda: PaymentType)
 
     class Meta:
         model = Customer
@@ -79,10 +82,15 @@ class CustomerType(DjangoObjectType):
         """Resolve total purchases made by the customer"""
         return Decimal(self.total_purchases or "0.00")
 
+    def resolve_transactions(self, info):
+        """Resolve customer payment transactions"""
+        from sales.models import Payment
 
-class ValueCountPair(graphene.ObjectType):
-    value = graphene.Decimal()
-    count = graphene.Int()
+        return (
+            Payment.objects.filter(sale__customer=self)
+            .select_related("sale")
+            .order_by("-created_at")
+        )
 
 
 class CustomerStatsType(graphene.ObjectType):

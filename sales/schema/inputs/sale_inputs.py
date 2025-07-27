@@ -24,6 +24,7 @@ class PaymentInput(graphene.InputObjectType):
 
     method = PaymentMethodEnum(required=True)
     amount = graphene.Decimal(required=True)
+    balance = graphene.Decimal(required=True)
 
 
 class CreateSaleInput(graphene.InputObjectType):
@@ -32,7 +33,7 @@ class CreateSaleInput(graphene.InputObjectType):
     customer_id = graphene.ID(required=True)
     sale_type = SaleTypeEnum(required=True, default_value=SaleTypeEnum.RETAIL)
     items = graphene.List(SaleItemInput, required=True)
-    payments = graphene.List(PaymentInput, required=True)
+    payment = PaymentInput(required=True)
     discount = graphene.Decimal(default_value=Decimal("0.00"))
     credit_applied = graphene.Decimal(default_value=Decimal("0.00"))
 
@@ -62,3 +63,33 @@ class CustomerCreditInput(graphene.InputObjectType):
     amount = graphene.Decimal(required=True)
     description = graphene.String()
     sale_id = graphene.ID()
+
+
+class ReturnItemInput(graphene.InputObjectType):
+    """Input type for return items"""
+
+    sale_item_id = graphene.ID(required=True)
+    quantity = graphene.Int(required=True)
+    refund_amount = graphene.Decimal(required=True)
+
+
+class CreateReturnInput(graphene.InputObjectType):
+    """Input type for creating a return request"""
+
+    sale_id = graphene.ID(required=True)
+    reason = graphene.String(required=True)
+    items = graphene.List(ReturnItemInput, required=True)
+
+
+class ApproveReturnInput(graphene.InputObjectType):
+    """Input type for approving a return"""
+
+    return_id = graphene.ID(required=True)
+    approval_notes = graphene.String()
+
+
+class RejectReturnInput(graphene.InputObjectType):
+    """Input type for rejecting a return"""
+
+    return_id = graphene.ID(required=True)
+    rejection_notes = graphene.String(required=True)
