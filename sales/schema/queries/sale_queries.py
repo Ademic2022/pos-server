@@ -221,7 +221,9 @@ class Query(graphene.ObjectType):
             total_transactions=Count("id"),
             average_sale_value=Avg("total"),
             retail_sales=Sum("total", filter=Q(sale_type="retail")),
+            retail_sales_count=Count("total", filter=Q(sale_type="retail")),
             wholesale_sales=Sum("total", filter=Q(sale_type="wholesale")),
+            wholesale_sales_count=Count("total", filter=Q(sale_type="wholesale")),
             total_discounts=Sum("discount"),
         )
 
@@ -272,23 +274,55 @@ class Query(graphene.ObjectType):
         )
 
         # Get current debt from Customer model's balance field (negative balances = debt)
+        # Apply the same filters as sales to get consistent debt data
         debt_queryset = Customer.objects.all()
 
         # Filter by customer if specified
         if customer:
             debt_queryset = debt_queryset.filter(id=customer)
 
+        # If there are date filters, we need to consider customers who had transactions in that period
+        # Get customers who had credit transactions in the filtered date range
+        if any(
+            [
+                date_from,
+                date_to,
+                created_at_date,
+                created_at_month,
+                created_at_year,
+                created_at_gte,
+                created_at_lte,
+            ]
+        ):
+            customers_with_transactions = credit_queryset.values_list(
+                "customer_id", flat=True
+            ).distinct()
+            debt_queryset = debt_queryset.filter(id__in=customers_with_transactions)
+
         debt_stats = debt_queryset.aggregate(
             total_debt_amount=Sum("balance", filter=Q(balance__lt=0)),
             total_debt_count=Count("balance", filter=Q(balance__lt=0)),
+        )
+
+        # Get customer count statistics from Customer model
+        customer_stats = Customer.objects.aggregate(
+            total_customer_count=Count("id"),
+            retail_customer_count=Count("id", filter=Q(type="retail")),
+            wholesale_customer_count=Count("id", filter=Q(type="wholesale")),
         )
 
         return SaleStatsType(
             total_sales=stats["total_sales"] or Decimal("0.00"),
             total_transactions=stats["total_transactions"] or 0,
             average_sale_value=round(stats["average_sale_value"] or Decimal("0.00"), 2),
-            retail_sales=stats["retail_sales"] or Decimal("0.00"),
-            wholesale_sales=stats["wholesale_sales"] or Decimal("0.00"),
+            retail_sales=ValueCountPair(
+                value=stats["retail_sales"] or Decimal("0.00"),
+                count=stats["retail_sales_count"] or 0,
+            ),
+            wholesale_sales=ValueCountPair(
+                value=stats["wholesale_sales"] or Decimal("0.00"),
+                count=stats["wholesale_sales_count"] or 0,
+            ),
             cash_sales=payment_stats["cash_sales"] or Decimal("0.00"),
             transfer_sales=payment_stats["transfer_sales"] or Decimal("0.00"),
             credit_sales=payment_stats["credit_card_sales"] or Decimal("0.00"),
@@ -312,6 +346,10 @@ class Query(graphene.ObjectType):
                 count=debt_stats["total_debt_count"] or 0,
             ),
             total_discounts=stats["total_discounts"] or Decimal("0.00"),
+            # Customer counts
+            total_customer_count=customer_stats["total_customer_count"] or 0,
+            retail_customer_count=customer_stats["retail_customer_count"] or 0,
+            wholesale_customer_count=customer_stats["wholesale_customer_count"] or 0,
             # Meta information
             date_range_from=date_from,
             date_range_to=date_to,
