@@ -185,8 +185,8 @@ class SaleStatsType(graphene.ObjectType):
     total_sales = graphene.Decimal()
     total_transactions = graphene.Int()
     average_sale_value = graphene.Decimal()
-    retail_sales = graphene.Decimal()
-    wholesale_sales = graphene.Decimal()
+    retail_sales = graphene.Field(ValueCountPair)
+    wholesale_sales = graphene.Field(ValueCountPair)
 
     # Payment method breakdown
     cash_sales = graphene.Decimal()
@@ -200,6 +200,11 @@ class SaleStatsType(graphene.ObjectType):
     customer_debt_incurred = graphene.Field(ValueCountPair)
 
     total_discounts = graphene.Decimal()
+
+    # Customer count statistics
+    total_customer_count = graphene.Int()
+    retail_customer_count = graphene.Int()
+    wholesale_customer_count = graphene.Int()
 
     # Meta information about the filtered data
     date_range_from = graphene.Date()
