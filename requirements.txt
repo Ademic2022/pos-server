@@ -24,6 +24,7 @@ pytest-cov==6.2.1
 pytest-django==4.11.1
 python-dateutil==2.9.0.post0
 python-decouple==3.8
+psycopg2-binary==2.9.10
 six==1.17.0
 sqlparse==0.5.3
 text-unidecode==1.3
